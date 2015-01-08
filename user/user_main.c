@@ -29,12 +29,14 @@
 */
 #include "ets_sys.h"
 #include "osapi.h"
-#include "mqtt.h"
-#include "wifi.h"
-#include "config.h"
-#include "debug.h"
 #include "gpio.h"
 #include "user_interface.h"
+
+#include "mqtt/mqtt.h"
+#include "mqtt/wifi.h"
+#include "mqtt/config.h"
+#include "mqtt/debug.h"
+
 #include "driver/caliper.h"
 #include "driver/dial.h"
 #include "driver/max6675.h"

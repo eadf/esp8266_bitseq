@@ -33,12 +33,12 @@
 #include "espconn.h"
 #include "os_type.h"
 #include "mem.h"
-#include "mqtt_msg.h"
-#include "debug.h"
+#include "mqtt/mqtt_msg.h"
+#include "mqtt/debug.h"
 #include "user_config.h"
-#include "config.h"
-#include "str_queue.h"
-#include "mqtt.h"
+#include "mqtt/config.h"
+#include "mqtt/str_queue.h"
+#include "mqtt/mqtt.h"
 
 
 #define MQTT_TASK_PRIO        		0

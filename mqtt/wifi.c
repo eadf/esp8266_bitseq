@@ -4,16 +4,16 @@
  *  Created on: Dec 30, 2014
  *      Author: Minh
  */
-#include "wifi.h"
+#include "mqtt/wifi.h"
 #include "user_interface.h"
 #include "osapi.h"
 #include "espconn.h"
 #include "os_type.h"
 #include "mem.h"
-#include "mqtt_msg.h"
-#include "debug.h"
+#include "mqtt/mqtt_msg.h"
+#include "mqtt/debug.h"
 #include "user_config.h"
-#include "config.h"
+#include "mqtt/config.h"
 
 static ETSTimer WiFiLinker;
 WifiCallback wifiCb = NULL;
