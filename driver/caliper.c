@@ -21,7 +21,7 @@ bool caliperDigitalValue(int pin) {
   return GPIO_INPUT_GET(pin) != 1;
 }
 
-bool ICACHE_FLASH_ATTR caliperDecode(float *returnValue) {
+bool ICACHE_FLASH_ATTR caliperDecode_BITBANG(float *returnValue) {
   int sign=1;
   long value=0;
   int i=0;
@@ -66,7 +66,7 @@ void ICACHE_FLASH_ATTR caliperInit() {
 }
 
 bool
-ICACHE_FLASH_ATTR ICACHE_FLASH_ATTR readCaliper(float *sample)
+ICACHE_FLASH_ATTR ICACHE_FLASH_ATTR readCaliper_BITBANG(float *sample)
 {
   uint32 i = 0;
 
@@ -96,7 +96,7 @@ ICACHE_FLASH_ATTR ICACHE_FLASH_ATTR readCaliper(float *sample)
 
   uint32 duration = dro_utils_micros()-tempmicros;
   if (duration>500) { //if the HIGH pulse was longer than 500 micros we are at the start of a new bit sequence
-    caliperDecode(sample); //caliperDecode the bit sequence
+    caliperDecode_BITBANG(sample); //caliperDecode the bit sequence
     //os_printf("started scanning and found something %d us later. Found %d\r\n" , duration, (int)(100* *sample));
     return true;
   } else {
@@ -107,7 +107,7 @@ ICACHE_FLASH_ATTR ICACHE_FLASH_ATTR readCaliper(float *sample)
 
 bool ICACHE_FLASH_ATTR readCaliperAsString(char *buf, int bufLen, int *bytesWritten){
   float sample = 0.0;
-  bool rv = readCaliper(&sample);
+  bool rv = readCaliper_BITBANG(&sample);
   if(rv){
     *bytesWritten = dro_utils_float_2_string(100.0*sample, 100, buf, bufLen);
   } else {
