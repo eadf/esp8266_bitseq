@@ -66,7 +66,7 @@ void wifiConnectCb(uint8_t status)
 void mqttConnectedCb(uint32_t *args)
 {
 	MQTT_Client* client = (MQTT_Client*)args;
-	INFO("MQTT: Connected! will use %s as MQTT channel \r\n", clientid);
+	INFO("MQTT: Connected! will use %s as MQTT topic \r\n", clientid);
 	broker_established = true;
 	MQTT_Subscribe(&mqttClient, "/test/topic");
 	MQTT_Subscribe(&mqttClient, "/test2/topic");
@@ -108,13 +108,13 @@ readSampleAndPublish(void *arg)
   int nextPeriod = CALIPER_SAMPLE_PERIOD;
   if (broker_established) {
     int bytesWritten = 0;
-    if (max6675_readTempAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten, true)) {
+    //if (max6675_readTempAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten, true)) {
     //if (readCaliperAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
-    //if (readDialAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
+    if (readDialAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
       INFO("MQTT readSampleAndPublish: received %s\r\n", sendbuffer);
       MQTT_Publish( &mqttClient, clientid, sendbuffer, bytesWritten, 0, false);
     } else {
-      // do a quick resample
+      // do a quick re-sample
       nextPeriod = 250;
     }
   }
@@ -132,8 +132,8 @@ void user_init(void)
 	CFG_Load();
 	gpio_init();
 	//caliperInit();
-	//dialInit();
-	max6675_init();
+	dialInit();
+	//max6675_init();
 
 	MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, SEC_NONSSL);
 	MQTT_InitClient(&mqttClient, sysCfg.device_id, sysCfg.mqtt_user, sysCfg.mqtt_pass, sysCfg.mqtt_keepalive);

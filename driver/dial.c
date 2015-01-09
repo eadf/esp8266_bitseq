@@ -9,6 +9,7 @@
 #include "gpio.h"
 #include "osapi.h"
 #include "driver/dro_utils.h"
+#include "driver/gpio_intr.h"
 
 const int CLOCK_IN_PIN = 0;
 const int DATA_IN_PIN = 2;
@@ -21,7 +22,7 @@ bool dialDigitalValue(int pin) {
   return GPIO_INPUT_GET(pin) == 1;
 }
 
-bool dialDecode(float *returnValue) {
+bool dialDecode_BitBang(float *returnValue) {
   //char samples[30];
   //uint32 duration = 0;
   //uint32 tempmicros = 0;
@@ -38,9 +39,9 @@ bool dialDecode(float *returnValue) {
     //samples[i]='?';
 
 
-    //tempmicros = dialMicros();
+    //tempmicros = dro_utils_micros();
     while (dialDigitalValue(CLOCK_IN_PIN)) { os_delay_us(1); } //wait until clock returns to LOW- the first bit is not needed
-    //duration = dialMicros()-tempmicros;
+    //duration = dro_utils_micros()-tempmicros;
     //if (duration>longestHighDuration) longestHighDuration = duration;
     //if (duration<shortestHighDuration) shortestHighDuration = duration;
 
@@ -56,9 +57,9 @@ bool dialDecode(float *returnValue) {
       //samples[i]='0';
     }
 
-    //tempmicros = dialMicros();
+    //tempmicros = dro_utils_micros();
     while (!dialDigitalValue(CLOCK_IN_PIN)) { os_delay_us(1);} //wait until clock returns to HIGH
-    //duration = dialMicros()-tempmicros;
+    //duration = dro_utils_micros()-tempmicros;
     //if (duration>longestLowDuration) longestLowDuration = duration;
     //if (duration<shortestLowDuration) shortestLowDuration = duration;
 
@@ -80,6 +81,7 @@ bool dialDecode(float *returnValue) {
  * Will set the input pin to inputs.
  */
 void dialInit() {
+  /*
   //os_printf("dial: Setting pins as input\r\n");
 
   //set gpio2 as gpio pin
@@ -97,9 +99,20 @@ void dialInit() {
 
   GPIO_DIS_OUTPUT(CLOCK_IN_PIN);
   GPIO_DIS_OUTPUT(DATA_IN_PIN);
+  */
+
+  // Acquire 24 pins
+  // at most 18 us between clock pulses
+  // at least 70 us between blocks
+  // at most 100 us between blocks
+  // falling edge
+  GPIOI_init(24, 18, 70, 100, false);
 }
 
-bool readDial(float *sample)
+/*
+ * deprecated method
+ */
+bool readDial_BitBang(float *sample)
 {
   uint32 i = 0;
   uint32 j = 0;
@@ -113,13 +126,14 @@ bool readDial(float *sample)
   for (j = 0; j < 24 && duration < 500; j++){
     //if clock is HIGH wait until it turns to LOW
     for (i=0; dialDigitalValue(CLOCK_IN_PIN); i++) {
-      os_delay_us(1);
+      os_delay_us(10000);
+
       if(i==100000){
         os_printf("dial: No Data 1\r\n");
         return false;
       }
     }
-    tempmicros = dialMicros();
+    tempmicros = dro_utils_micros();
 
     //wait for the end of the LOW pulse
     for (i=0; !dialDigitalValue(CLOCK_IN_PIN); i++ ) {
@@ -129,20 +143,71 @@ bool readDial(float *sample)
         return false;
       }
     }
-    duration = dialMicros()-tempmicros;
+    duration = dro_utils_micros()-tempmicros;
     if (duration>longestDuration) longestDuration = duration;
 
   }
 
   if (j<24) { //if the LOW pulse was longer than 500 micros we are at the start of a new bit sequence
     // we are not at a rising edge
-    dialDecode(sample); //dialDecode the bit sequence
+    dialDecode_BitBang(sample); //dialDecode the bit sequence
     //os_printf("started scanning and found something %d us later ld=%d. Found %d\r\n" , duration, longestDuration, (int)(100* *sample));
     return true;
   } else {
     os_printf("dial: started scanning and gave up %d us later ld=%d.\r\n" , duration, longestDuration);
     return false;
   }
+}
+
+bool ICACHE_FLASH_ATTR
+readDial(float *sample)
+{
+  uint32_t fastestPeriod = 0;
+  uint32_t slowestPeriod = 0;
+  uint16_t currentBit = 0;
+  uint32_t bitZeroWait = 0;
+
+  //uint32_t now = GPIOI_micros();
+  uint16_t i = 0;
+  uint32_t result;
+  int32_t polishedResult;
+
+  if (!GPIOI_isRunning()){
+    os_printf("Setting new interrupt handler\n\r");
+    GPIOI_enableInterrupt();
+  }
+
+  for (i=0; i<100; i++) {
+    os_delay_us(10000); // 10ms
+
+    result = GPIOI_getResult(&fastestPeriod, &slowestPeriod, &bitZeroWait, &currentBit);
+    polishedResult = result;
+    if (result & 1<<23 ) {
+      // bit 23 indicates negative value, just set bit 24-31 as well
+      polishedResult = (int32_t)(1.2397707131274277*((int32_t)(result|0xff000000)));
+    } else {
+      polishedResult = (int32_t)(1.2397707131274277*result);
+    }
+
+    if (! GPIOI_isRunning() ) {
+      os_printf("Result is: ");
+      GPIOIprintBinary(result);
+      os_printf(" %06X %07d fast:%d slow:%d zw:%d currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroWait, currentBit );
+      *sample = 0.0001f*polishedResult;
+      return true;
+    } //else {
+      //os_printf("Still running, tmp result is: ");
+      //GPIOIprintBinary(result);
+      //os_printf(" %06X %07d fast:%d slow:%d zw:%d currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroWait, currentBit );
+    //}
+  }
+
+  os_printf("GPIOI Still running, tmp result is: ");
+  GPIOIprintBinary(result);
+  os_printf(" %06X %07d fast:%d slow:%d zw:%d currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroWait, currentBit );
+
+  os_printf(" readDial timeout");
+  return false;
 }
 
 bool readDialAsString(char *buf, int bufLen, int *bytesWritten){

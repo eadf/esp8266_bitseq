@@ -1,8 +1,11 @@
 /*
  * gpio_intr.c
  *
+ *  Generic bit sampler. Samples the value of GPIOI_DATA_PIN every falling or rising edge of GPIOI_CLK_PIN.
+ *
+ *
  *  Created on: Jan 7, 2015
- *      Author: user
+ *      Author: Ead Fritz
  */
 
 #include "driver/gpio_intr.h"
@@ -11,12 +14,17 @@
 #include "os_type.h"
 #include "gpio.h"
 
+static const uint16_t GPIOI_CLK_PIN = 0;
+static const uint16_t GPIOI_DATA_PIN = 2;
+
 // wow, we love static global data, don't we?
+
 static volatile uint32_t GPIOI_maxClockPeriod = 0;
 static volatile uint32_t GPIOI_minStartPeriod = 0;
 static volatile uint32_t GPIOI_maxStartPeriod = 0;
 static volatile uint16_t GPIOI_numberOfBits = 24;
 static volatile bool GPIOI_onRising = false;
+static volatile bool GPIOI_everStarted = false;
 
 static volatile bool GPIOI_resultReady = false;
 static volatile uint32_t GPIOI_data = 0;
@@ -24,9 +32,10 @@ static volatile uint32_t GPIOI_last = 0;
 static volatile uint32_t GPIOI_fastest = 0;
 static volatile uint32_t GPIOI_slowest = 0;
 static volatile uint32_t GPIOI_bitZeroWait = 0;
-static const uint16_t GPIOI_CLK_PIN = 0;
-static const uint16_t GPIOI_DATA_PIN = 2;
+
 static volatile uint16_t GPIOI_currentBit = 0;
+
+static volatile uint32_t GPIOI_heartbeat = 0;
 
 void ICACHE_FLASH_ATTR
 GPIOI_disableInterrupt() {
@@ -34,9 +43,13 @@ GPIOI_disableInterrupt() {
   gpio_pin_intr_state_set(GPIO_ID_PIN(GPIOI_CLK_PIN), GPIO_PIN_INTR_DISABLE);
 }
 
+uint32_t ICACHE_FLASH_ATTR GPIOI_getHeartbeat() {
+  return GPIOI_heartbeat;
+}
+
 void ICACHE_FLASH_ATTR
 GPIOI_enableInterrupt() {
-
+  GPIOI_everStarted = true;
   GPIOI_currentBit = 0;
   GPIOI_data = 0;
   GPIOI_fastest = 0xFFFFFFFF;
@@ -74,6 +87,11 @@ GPIOI_CLK_PIN_intr_handler(int8_t key)
   uint32_t gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
   //clear interrupt status
   GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status & BIT(0));
+
+#ifdef DRIVER_GPIO_INTR_ENABLE_HEARTBEAT
+  GPIOI_heartbeat +=1;
+#endif
+
   if (GPIOI_resultReady) return; // we are already done here
 
   uint32_t now = GPIOI_micros();
@@ -123,7 +141,7 @@ GPIOI_getResult(uint32_t *fastestPeriod, uint32_t *slowestPeriod, uint32_t *bitZ
 }
 
 bool GPIOI_isRunning() {
-  return !GPIOI_resultReady;
+  return GPIOI_everStarted && !GPIOI_resultReady;
 }
 
 /**
@@ -143,6 +161,7 @@ GPIOI_init(uint16_t numberOfBits, uint32_t maxClockPeriod, uint32_t minStartPeri
 
   //set gpio0 as gpio pin
   PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);
+  //set gpio2 as gpio pin
   PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
 
   //disable pull downs

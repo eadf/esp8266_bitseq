@@ -10,6 +10,8 @@
 
 #include "c_types.h"
 
+#define DRIVER_GPIO_INTR_ENABLE_HEARTBEAT
+
 /**
  * numberOfBits: the number of bits we are going to sample
  * maxClockPeriod: the maximum length of a clock period
@@ -20,6 +22,9 @@ void GPIOI_init(uint16_t numberOfBits, uint32_t maxClockPeriod, uint32_t minStar
 bool GPIOI_isRunning();
 void GPIOI_enableInterrupt();
 void GPIOI_disableInterrupt();
+uint32_t GPIOI_micros();
+uint32_t GPIOI_getHeartbeat();
+
 uint32_t GPIOI_getResult(uint32_t *fastestPeriod, uint32_t *slowestPeriod, uint32_t *bitZeroWait, uint16_t *currentBit);
 
 void GPIOIprintBinary(uint32_t data);
