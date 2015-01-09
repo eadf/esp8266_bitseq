@@ -13,6 +13,11 @@
 const int CALIPER_CLOCK_IN_PIN = 0;
 const int CALIPER_DATA_IN_PIN = 2;
 
+/* forward declarations to shut up the compiler -Werror=missing-prototypes */
+bool caliperDigitalValue(int pin);
+bool caliperDecode_BITBANG(float *returnValue);
+bool readCaliper_BITBANG(float *sample);
+
 /**
  * The original arduino source code was made for an inverting level shifter.
  * I'm using non-inverting hardware, so the program logic has to be inverted back again :/
@@ -45,7 +50,16 @@ bool ICACHE_FLASH_ATTR caliperDecode_BITBANG(float *returnValue) {
 /**
  * Will set the input pin to inputs.
  */
-void ICACHE_FLASH_ATTR caliperInit() {
+void ICACHE_FLASH_ATTR
+caliperInit(void) {
+  // Acquire 24 pins
+  // at most 900 us between clock pulses
+  // at least 10 ms between blocks
+  // at most 5 sec between blocks
+  // rising edge
+  GPIOI_init(24, 900, 10000, 5000000, true);
+
+  /*
   //os_printf("Caliper: Setting pins as input\r\n");
 
   //set gpio2 as gpio pin
@@ -63,11 +77,11 @@ void ICACHE_FLASH_ATTR caliperInit() {
 
   GPIO_DIS_OUTPUT(CALIPER_CLOCK_IN_PIN);
   GPIO_DIS_OUTPUT(CALIPER_DATA_IN_PIN);
+  */
 }
 
-bool
-ICACHE_FLASH_ATTR ICACHE_FLASH_ATTR readCaliper_BITBANG(float *sample)
-{
+bool ICACHE_FLASH_ATTR
+readCaliper_BITBANG(float *sample) {
   uint32 i = 0;
 
   // just to be safe - set pins as input once again
@@ -105,11 +119,65 @@ ICACHE_FLASH_ATTR ICACHE_FLASH_ATTR readCaliper_BITBANG(float *sample)
   }
 }
 
+
+bool ICACHE_FLASH_ATTR readCaliper(float *sample) {
+  uint32_t fastestPeriod = 0;
+  uint32_t slowestPeriod = 0;
+  uint16_t currentBit = 0;
+  uint8_t statusBits = 0;
+  uint32_t bitZeroPeriod = 0;
+
+  uint16_t i = 0;
+  uint32_t result;
+  int32_t polishedResult;
+
+  if (!GPIOI_isRunning()){
+    //os_printf("Setting new interrupt handler\n\r");
+    GPIOI_enableInterrupt();
+  }
+
+  for (i=0; i<100; i++) {
+    os_delay_us(20000); // 20ms
+
+    if (! GPIOI_isRunning() ) {
+      result = GPIOI_getResult(&fastestPeriod, &slowestPeriod, &bitZeroPeriod, &statusBits, &currentBit);
+      polishedResult = result;
+      if (polishedResult & 1<<20 ) {
+        // bit 20 signals negative value
+        polishedResult &= 0xEFFFFF; // lower bit 20 again
+        polishedResult = -polishedResult; // set it to negative value
+      }
+
+      //os_printf("Result is %d", polishedResult);
+      //os_delay_us(50);
+
+      //GPIOIprintBinary(result);
+      //os_printf(" %06X %07d fast:%d slow:%d zw:%d sb:%02X currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroPeriod, statusBits, currentBit );
+
+      *sample = 0.01f * polishedResult;
+
+      return true;
+    } //else {
+      //os_printf("Still running, tmp result is: ");
+      //GPIOIprintBinary(result);
+      //os_printf(" %06X %07d fast:%d slow:%d zw:%d currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroPeriod, currentBit );
+    //}
+  }
+  os_printf("GPIOI Still running, tmp result is: ");
+  result = GPIOI_getResult(&fastestPeriod, &slowestPeriod, &bitZeroPeriod, &statusBits, &currentBit);
+  GPIOIprintBinary(result);
+  os_printf(" %06X %07d fast:%d slow:%d zw:%d sb:%02X currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroPeriod, statusBits, currentBit );
+
+  os_printf(" readCaliper timeout. Heartbeat:%d\n\r", GPIOI_getHeartbeat());
+  return false;
+}
+
+
 bool ICACHE_FLASH_ATTR readCaliperAsString(char *buf, int bufLen, int *bytesWritten){
   float sample = 0.0;
-  bool rv = readCaliper_BITBANG(&sample);
+  bool rv = readCaliper(&sample);
   if(rv){
-    *bytesWritten = dro_utils_float_2_string(100.0*sample, 100, buf, bufLen);
+    *bytesWritten = dro_utils_float_2_string(100.0f*sample, 100, buf, bufLen);
   } else {
     *bytesWritten = 0;
     buf[0] = 0;
