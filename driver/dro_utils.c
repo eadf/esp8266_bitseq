@@ -10,7 +10,7 @@
 
 // quick and dirty implementation of sprintf with %f
 int ICACHE_FLASH_ATTR
-dro_utils_float_2_string(float sample, int divisor, char *buf, int bufLen){
+dro_utils_float_2_string(float sample, int divisor, char *buf, int bufLen) {
   char localBuffer[256];
 
   int s = sample>0?1:-1;
@@ -46,6 +46,6 @@ dro_utils_float_2_string(float sample, int divisor, char *buf, int bufLen){
  * caliperMicros() : return system timer in us
  */
 uint32 ICACHE_FLASH_ATTR
-dro_utils_micros() {
+dro_utils_micros(void) {
   return 0x7FFFFFFF & system_get_time();
 }

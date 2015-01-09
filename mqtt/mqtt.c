@@ -59,6 +59,13 @@ unsigned int default_private_key_len = 0;
 
 os_event_t mqtt_procTaskQueue[MQTT_TASK_QUEUE_SIZE];
 
+/* forward declarations to shut up the compiler -Werror=missing-prototypes */
+void mqtt_tcpclient_sent_cb(void *arg);
+void mqtt_tcpclient_discon_cb(void *arg);
+void mqtt_tcpclient_connect_cb(void *arg);
+void mqtt_timer(void *arg);
+void mqtt_tcpclient_recon_cb(void *arg, sint8 errType);
+void MQTT_Task(os_event_t *e);
 
 LOCAL void ICACHE_FLASH_ATTR
 mqtt_dns_found(const char *name, ip_addr_t *ipaddr, void *arg)
@@ -131,6 +138,11 @@ deliver_publish_continuation(MQTT_Client* client, uint16_t offset, uint8_t* buff
 
  //process_post_synch(state->calling_process, mqtt_event, &event_data);
 }
+
+/**
+ * shut up -Werror=missing-prototypes
+ */
+void mqtt_tcpclient_recv(void *arg, char *pdata, unsigned short len);
 
 /**
   * @brief  Client received callback function.
@@ -496,8 +508,6 @@ void MQTT_InitConnection(MQTT_Client *mqttClient, uint8_t* host, uint32 port, ui
 	espconn_regist_reconcb(mqttClient->pCon, mqtt_tcpclient_recon_cb);
 
 }
-
-
 
 void MQTT_InitClient(MQTT_Client *mqttClient, uint8_t* client_id, uint8_t* client_user, uint8_t* client_pass, uint32_t keepAliveTime)
 {

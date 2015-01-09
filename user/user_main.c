@@ -52,6 +52,15 @@ static char sendbuffer[SENDBUFFERSIZE];
 #define MAC2STR(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
 #define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
 
+void wifiConnectCb(uint8_t status);
+void mqttConnectedCb(uint32_t *args);
+void mqttConnectedCb(uint32_t *args);
+void mqttPublishedCb(uint32_t *args);
+void mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len, const char *data, uint32_t data_len);
+void mqttDisconnectedCb(uint32_t *args);
+void readSampleAndPublish(void *arg);
+void user_init(void);
+
 void wifiConnectCb(uint8_t status)
 {
   char hwaddr[6];
@@ -109,8 +118,8 @@ readSampleAndPublish(void *arg)
   if (broker_established) {
     int bytesWritten = 0;
     //if (max6675_readTempAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten, true)) {
-    //if (readCaliperAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
-    if (readDialAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
+    if (readCaliperAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
+    //if (readDialAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
       INFO("MQTT readSampleAndPublish: received %s\r\n", sendbuffer);
       MQTT_Publish( &mqttClient, clientid, sendbuffer, bytesWritten, 0, false);
     } else {
@@ -131,8 +140,8 @@ void user_init(void)
 
 	CFG_Load();
 	gpio_init();
-	//caliperInit();
-	dialInit();
+	caliperInit();
+	//dialInit();
 	//max6675_init();
 
 	MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, SEC_NONSSL);

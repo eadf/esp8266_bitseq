@@ -8,7 +8,7 @@
  * and you think this stuff is worth it, you can buy me a beer in return. 
  * ----------------------------------------------------------------------------
  */
-
+#include "driver/stdout.h"
 #include "ets_sys.h"
 #include "osapi.h"
 #include "driver/uart_hw.h"

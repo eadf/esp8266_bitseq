@@ -14,6 +14,11 @@
 const int CLOCK_IN_PIN = 0;
 const int DATA_IN_PIN = 2;
 
+/* forward declarations to shut up the compiler -Werror=missing-prototypes */
+bool dialDigitalValue(int pin);
+bool dialDecode_BitBang(float *returnValue);
+bool readDial_BitBang(float *sample);
+
 /**
  * I've made this a 'one stop' function for pin access. So if you need to invert the logic
  * you can do it here, in one single place.
@@ -22,7 +27,8 @@ bool dialDigitalValue(int pin) {
   return GPIO_INPUT_GET(pin) == 1;
 }
 
-bool dialDecode_BitBang(float *returnValue) {
+bool ICACHE_FLASH_ATTR
+dialDecode_BitBang(float *returnValue) {
   //char samples[30];
   //uint32 duration = 0;
   //uint32 tempmicros = 0;
@@ -80,7 +86,8 @@ bool dialDecode_BitBang(float *returnValue) {
 /**
  * Will set the input pin to inputs.
  */
-void dialInit() {
+void ICACHE_FLASH_ATTR
+dialInit(void) {
   /*
   //os_printf("dial: Setting pins as input\r\n");
 
@@ -112,8 +119,8 @@ void dialInit() {
 /*
  * deprecated method
  */
-bool readDial_BitBang(float *sample)
-{
+bool ICACHE_FLASH_ATTR
+readDial_BitBang(float *sample) {
   uint32 i = 0;
   uint32 j = 0;
   uint32 duration = 0;
@@ -165,9 +172,9 @@ readDial(float *sample)
   uint32_t fastestPeriod = 0;
   uint32_t slowestPeriod = 0;
   uint16_t currentBit = 0;
-  uint32_t bitZeroWait = 0;
+  uint8_t statusBits = 0;
+  uint32_t bitZeroPeriod = 0;
 
-  //uint32_t now = GPIOI_micros();
   uint16_t i = 0;
   uint32_t result;
   int32_t polishedResult;
@@ -179,32 +186,33 @@ readDial(float *sample)
 
   for (i=0; i<100; i++) {
     os_delay_us(10000); // 10ms
-    result = GPIOI_getResult(&fastestPeriod, &slowestPeriod, &bitZeroWait, &currentBit);
     if (! GPIOI_isRunning() ) {
+      result = GPIOI_getResult(&fastestPeriod, &slowestPeriod, &bitZeroPeriod, &statusBits, &currentBit);
       polishedResult = result;
       if (result & 1<<23 ) {
         // bit 23 indicates negative value, just set bit 24-31 as well
-        polishedResult = (int32_t)(1.2397707131274277*((int32_t)(result|0xff000000)));
+        polishedResult = (int32_t)(1.2397707131274277f*((int32_t)(result|0xff000000)));
       } else {
-        polishedResult = (int32_t)(1.2397707131274277*result);
+        polishedResult = (int32_t)(1.2397707131274277f*result);
       }
       //os_printf("Result is: ");
       //GPIOIprintBinary(result);
-      //os_printf(" %06X %07d fast:%d slow:%d zw:%d currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroWait, currentBit );
+      //os_printf(" %06X %07d fast:%d slow:%d zw:%d currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroPeriod, currentBit );
       *sample = 0.0001f*polishedResult;
       return true;
     } //else {
       //os_printf("Still running, tmp result is: ");
       //GPIOIprintBinary(result);
-      //os_printf(" %06X %07d fast:%d slow:%d zw:%d currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroWait, currentBit );
+      //os_printf(" %06X %07d fast:%d slow:%d zw:%d currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroPeriod, currentBit );
     //}
   }
 
   os_printf("GPIOI Still running, tmp result is: ");
+  result = GPIOI_getResult(&fastestPeriod, &slowestPeriod, &bitZeroPeriod, &statusBits, &currentBit);
   GPIOIprintBinary(result);
-  os_printf(" %06X %07d fast:%d slow:%d zw:%d currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroWait, currentBit );
+  os_printf(" %06X %07d fast:%d slow:%d zw:%d sb:%02X currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroPeriod, statusBits, currentBit );
 
-  os_printf(" readDial timeout");
+  os_printf(" readDial timeout. Heartbeat:%d\n\r", GPIOI_getHeartbeat());
   return false;
 }
 
@@ -212,7 +220,7 @@ bool readDialAsString(char *buf, int bufLen, int *bytesWritten){
   float sample = 0.0;
   bool rv = readDial(&sample);
   if(rv){
-    *bytesWritten = dro_utils_float_2_string(10000.0*sample, 10000, buf, bufLen);
+    *bytesWritten = dro_utils_float_2_string(10000.0f*sample, 10000, buf, bufLen);
   } else {
     *bytesWritten = 0;
     buf[0] = '\0';

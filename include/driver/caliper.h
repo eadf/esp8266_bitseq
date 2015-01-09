@@ -12,6 +12,6 @@
 
 bool readCaliper(float *sample);
 bool readCaliperAsString(char *sample, int bufLen, int *bytesWritten);
-void caliperInit();
+void caliperInit(void);
 
 #endif /* USER_CALIPER_H_ */

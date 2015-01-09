@@ -10,7 +10,7 @@
 
 #include "c_types.h"
 
-void dialInit();
+void dialInit(void);
 bool readDial(float *sample);
 bool readDialAsString(char *sample, int bufLen, int *bytesWritten);
 

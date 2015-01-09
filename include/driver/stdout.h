@@ -1,1 +1,1 @@
-void stdoutInit();
+void stdoutInit(void);

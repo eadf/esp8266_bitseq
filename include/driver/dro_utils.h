@@ -18,7 +18,7 @@
  */
 int dro_utils_float_2_string(float sample, int divisor, char *buf, int bufLen);
 
-uint32 dro_utils_micros();
+uint32 dro_utils_micros(void);
 
 
 #endif /* USER_DRO_UTILS_H_ */

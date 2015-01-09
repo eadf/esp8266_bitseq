@@ -17,17 +17,21 @@
 #define SCLK_PIN 2  // This is GIOP2, connect a 10K pulldown to GND to avoid problems with the bootloader starting
 #define MISO_PIN 3  // this pin is normally RX. So don't have your hardware connected while flashing.
 
+void max6675_delay(uint32 microseconds);
+void max6675_delay_between_clock(void);
+void max6675_digitalWrite(unsigned int pin, bool value);
+bool max6675_digitalRead(unsigned int pin);
+uint8_t max6675_readByte(void);
 
 // some arduino lookalike methods :)
 #define LOW false
 #define HIGH true
-typedef unsigned char byte;
 
 void max6675_delay(uint32 microseconds) {
   os_delay_us(1000*microseconds);
 }
 
-void max6675_delay_between_clock() {
+void max6675_delay_between_clock(void) {
   os_delay_us(500);
 }
 
@@ -70,10 +74,10 @@ max6675_init(void) {
   GPIO_DIS_OUTPUT(MISO_PIN);
 }
 
-byte ICACHE_FLASH_ATTR
+uint8_t ICACHE_FLASH_ATTR
 max6675_readByte(void) {
   int i;
-  byte d = 0;
+  uint8_t d = 0;
   for (i=7; i>=0; i--)
   {
     max6675_digitalWrite(SCLK_PIN, LOW);
