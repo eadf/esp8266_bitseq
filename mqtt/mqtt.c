@@ -291,7 +291,7 @@ mqtt_tcpclient_sent_cb(void *arg)
 {
 	struct espconn *pCon = (struct espconn *)arg;
 	MQTT_Client* client = (MQTT_Client *)pCon->reverse;
-	INFO("TCP: Sent\r\n");
+	//INFO("TCP: Sent\r\n");
 	if(client->connState == MQTT_DATA){
 		if(client->publishedCb)
 			client->publishedCb((uint32_t*)client);

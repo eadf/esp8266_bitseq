@@ -173,26 +173,24 @@ readDial(float *sample)
   int32_t polishedResult;
 
   if (!GPIOI_isRunning()){
-    os_printf("Setting new interrupt handler\n\r");
+    //os_printf("Setting new interrupt handler\n\r");
     GPIOI_enableInterrupt();
   }
 
   for (i=0; i<100; i++) {
     os_delay_us(10000); // 10ms
-
     result = GPIOI_getResult(&fastestPeriod, &slowestPeriod, &bitZeroWait, &currentBit);
-    polishedResult = result;
-    if (result & 1<<23 ) {
-      // bit 23 indicates negative value, just set bit 24-31 as well
-      polishedResult = (int32_t)(1.2397707131274277*((int32_t)(result|0xff000000)));
-    } else {
-      polishedResult = (int32_t)(1.2397707131274277*result);
-    }
-
     if (! GPIOI_isRunning() ) {
-      os_printf("Result is: ");
-      GPIOIprintBinary(result);
-      os_printf(" %06X %07d fast:%d slow:%d zw:%d currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroWait, currentBit );
+      polishedResult = result;
+      if (result & 1<<23 ) {
+        // bit 23 indicates negative value, just set bit 24-31 as well
+        polishedResult = (int32_t)(1.2397707131274277*((int32_t)(result|0xff000000)));
+      } else {
+        polishedResult = (int32_t)(1.2397707131274277*result);
+      }
+      //os_printf("Result is: ");
+      //GPIOIprintBinary(result);
+      //os_printf(" %06X %07d fast:%d slow:%d zw:%d currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroWait, currentBit );
       *sample = 0.0001f*polishedResult;
       return true;
     } //else {
