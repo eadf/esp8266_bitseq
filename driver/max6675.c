@@ -27,19 +27,23 @@ uint8_t max6675_readByte(void);
 #define LOW false
 #define HIGH true
 
-void max6675_delay(uint32 microseconds) {
+void ICACHE_FLASH_ATTR
+max6675_delay(uint32 microseconds) {
   os_delay_us(1000*microseconds);
 }
 
-void max6675_delay_between_clock(void) {
+void ICACHE_FLASH_ATTR
+max6675_delay_between_clock(void) {
   os_delay_us(500);
 }
 
-void max6675_digitalWrite(unsigned int pin, bool value) {
+void ICACHE_FLASH_ATTR
+max6675_digitalWrite(unsigned int pin, bool value) {
   GPIO_OUTPUT_SET(pin, value);
 }
 
-bool max6675_digitalRead(unsigned int pin) {
+bool ICACHE_FLASH_ATTR
+max6675_digitalRead(unsigned int pin) {
   return GPIO_INPUT_GET(pin)!=0;
 }
 
@@ -121,7 +125,8 @@ max6675_readTemp(float* sample, bool celcius)
   return true;
 }
 
-bool ICACHE_FLASH_ATTR max6675_readTempAsString(char *buf, int bufLen, int *bytesWritten, bool celcius){
+bool ICACHE_FLASH_ATTR
+max6675_readTempAsString(char *buf, int bufLen, int *bytesWritten, bool celcius){
   float sample = 0.0;
   bool rv = max6675_readTemp(&sample, celcius);
   if(rv){

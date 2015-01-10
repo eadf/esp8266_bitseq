@@ -61,7 +61,8 @@ void mqttDisconnectedCb(uint32_t *args);
 void readSampleAndPublish(void *arg);
 void user_init(void);
 
-void wifiConnectCb(uint8_t status)
+void ICACHE_FLASH_ATTR
+wifiConnectCb(uint8_t status)
 {
   char hwaddr[6];
   wifi_get_macaddr(0, hwaddr);
@@ -72,7 +73,8 @@ void wifiConnectCb(uint8_t status)
 	}
 }
 
-void mqttConnectedCb(uint32_t *args)
+void ICACHE_FLASH_ATTR
+mqttConnectedCb(uint32_t *args)
 {
 	MQTT_Client* client = (MQTT_Client*)args;
 	INFO("MQTT: Connected! will use %s as MQTT topic \r\n", clientid);
@@ -81,20 +83,23 @@ void mqttConnectedCb(uint32_t *args)
 	MQTT_Subscribe(&mqttClient, "/test2/topic");
 }
 
-void mqttDisconnectedCb(uint32_t *args)
+void ICACHE_FLASH_ATTR
+mqttDisconnectedCb(uint32_t *args)
 {
 	MQTT_Client* client = (MQTT_Client*)args;
 	INFO("MQTT: Disconnected\r\n");
 	broker_established = false;
 }
 
-void mqttPublishedCb(uint32_t *args)
+void ICACHE_FLASH_ATTR
+mqttPublishedCb(uint32_t *args)
 {
 	MQTT_Client* client = (MQTT_Client*)args;
 	INFO("MQTT: Published\r\n");
 }
 
-void mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len, const char *data, uint32_t data_len)
+void ICACHE_FLASH_ATTR
+mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len, const char *data, uint32_t data_len)
 {
 	char topicBuf[64], dataBuf[64];
 	MQTT_Client* client = (MQTT_Client*)args;
@@ -111,15 +116,15 @@ void mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len, const cha
 	MQTT_Publish(client, "/echo", dataBuf, data_len, 0, 0);
 }
 
-void
+void ICACHE_FLASH_ATTR
 readSampleAndPublish(void *arg)
 {
   int nextPeriod = CALIPER_SAMPLE_PERIOD;
   if (broker_established) {
     int bytesWritten = 0;
     //if (max6675_readTempAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten, true)) {
-    if (readCaliperAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
-    //if (readDialAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
+    //if (readCaliperAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
+    if (readDialAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
       INFO("MQTT readSampleAndPublish: received %s\r\n", sendbuffer);
       MQTT_Publish( &mqttClient, clientid, sendbuffer, bytesWritten, 0, false);
     } else {
@@ -135,13 +140,14 @@ void user_init(void)
 {
   // Make os_printf working again. Baud:115200,n,8,1
   stdoutInit();
-
-	os_delay_us(1000000);
+  os_timer_disarm(&sensor_timer);
+	os_delay_us(400000);
+	INFO("\r\nStarting\r\n");
 
 	CFG_Load();
 	gpio_init();
-	caliperInit();
-	//dialInit();
+	//caliperInit();
+	dialInit();
 	//max6675_init();
 
 	MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, SEC_NONSSL);
@@ -155,8 +161,6 @@ void user_init(void)
 	WIFI_Connect(sysCfg.sta_ssid, sysCfg.sta_pwd, wifiConnectCb);
 
 	INFO("\r\nSystem started ...\r\n");
-
-	os_timer_disarm(&sensor_timer);
 
   //Setup timer
   os_timer_setfn(&sensor_timer, (os_timer_func_t *)readSampleAndPublish, NULL);
