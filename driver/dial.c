@@ -11,8 +11,9 @@
 #include "driver/dro_utils.h"
 #include "driver/gpio_intr.h"
 
-const int CLOCK_IN_PIN = 0;
-const int DATA_IN_PIN = 2;
+static const int CLOCK_IN_PIN = 0;
+static const int DATA_IN_PIN = 2;
+static const float CONVERT_TO_MM = 1.2397707131274277f;
 
 /* forward declarations to shut up the compiler -Werror=missing-prototypes */
 bool dialDigitalValue(int pin);
@@ -169,12 +170,6 @@ readDial_BitBang(float *sample) {
 bool ICACHE_FLASH_ATTR
 readDial(float *sample)
 {
-  uint32_t fastestPeriod = 0;
-  uint32_t slowestPeriod = 0;
-  uint16_t currentBit = 0;
-  uint8_t statusBits = 0;
-  uint32_t bitZeroPeriod = 0;
-
   uint16_t i = 0;
   uint32_t result;
   int32_t polishedResult;
@@ -187,32 +182,23 @@ readDial(float *sample)
   for (i=0; i<100; i++) {
     os_delay_us(10000); // 10ms
     if (! GPIOI_isRunning() ) {
-      result = GPIOI_getResult(&fastestPeriod, &slowestPeriod, &bitZeroPeriod, &statusBits, &currentBit);
+      result = GPIOI_sliceBits(0,23);
       polishedResult = result;
       if (result & 1<<23 ) {
         // bit 23 indicates negative value, just set bit 24-31 as well
-        polishedResult = (int32_t)(1.2397707131274277f*((int32_t)(result|0xff000000)));
+        polishedResult = (int32_t)(CONVERT_TO_MM*((int32_t)(result|0xff000000)));
       } else {
-        polishedResult = (int32_t)(1.2397707131274277f*result);
+        polishedResult = (int32_t)(CONVERT_TO_MM*result);
       }
-      //os_printf("Result is: ");
-      //GPIOIprintBinary(result);
-      //os_printf(" %06X %07d fast:%d slow:%d zw:%d currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroPeriod, currentBit );
+      os_printf("GPIOI got result: ");
+      GPIOI_debugTrace(0,23);
       *sample = 0.0001f*polishedResult;
       return true;
-    } //else {
-      //os_printf("Still running, tmp result is: ");
-      //GPIOIprintBinary(result);
-      //os_printf(" %06X %07d fast:%d slow:%d zw:%d currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroPeriod, currentBit );
-    //}
+    }
   }
 
   os_printf("GPIOI Still running, tmp result is: ");
-  result = GPIOI_getResult(&fastestPeriod, &slowestPeriod, &bitZeroPeriod, &statusBits, &currentBit);
-  GPIOIprintBinary(result);
-  os_printf(" %06X %07d fast:%d slow:%d zw:%d sb:%02X currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroPeriod, statusBits, currentBit );
-
-  os_printf(" readDial timeout. Heartbeat:%d\n\r", GPIOI_getHeartbeat());
+  GPIOI_debugTrace(0,23);
   return false;
 }
 

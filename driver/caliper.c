@@ -10,8 +10,10 @@
 #include "osapi.h"
 #include "driver/dro_utils.h"
 
-const int CALIPER_CLOCK_IN_PIN = 0;
-const int CALIPER_DATA_IN_PIN = 2;
+static const int CLOCK_IN_PIN = 0;
+static const int DATA_IN_PIN = 2;
+static const float CONVERT_TO_MM = 0.01f;
+static bool initIsCalled = false;
 
 /* forward declarations to shut up the compiler -Werror=missing-prototypes */
 bool caliperDigitalValue(int pin);
@@ -31,9 +33,9 @@ bool ICACHE_FLASH_ATTR caliperDecode_BITBANG(float *returnValue) {
   long value=0;
   int i=0;
   for (i=0;i<23;i++) {
-    while (caliperDigitalValue(CALIPER_CLOCK_IN_PIN)) { os_delay_us(1); } //wait until clock returns to HIGH- the first bit is not needed
-    while (!caliperDigitalValue(CALIPER_CLOCK_IN_PIN)) { os_delay_us(1);} //wait until clock returns to LOW
-    if (!caliperDigitalValue(CALIPER_DATA_IN_PIN)) {
+    while (caliperDigitalValue(CLOCK_IN_PIN)) { os_delay_us(1); } //wait until clock returns to HIGH- the first bit is not needed
+    while (!caliperDigitalValue(CLOCK_IN_PIN)) { os_delay_us(1);} //wait until clock returns to LOW
+    if (!caliperDigitalValue(DATA_IN_PIN)) {
       if (i<20) {
         value |= 1<<i;
       }
@@ -58,26 +60,8 @@ caliperInit(void) {
   // at most 5 sec between blocks
   // rising edge
   GPIOI_init(24, 900, 10000, 5000000, true);
-
-  /*
-  //os_printf("Caliper: Setting pins as input\r\n");
-
-  //set gpio2 as gpio pin
-  PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
-  //set gpio0 as gpio pin
-  PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);
-
-  //disable pull downs
-  PIN_PULLDWN_DIS(PERIPHS_IO_MUX_GPIO2_U);
-  PIN_PULLDWN_DIS(PERIPHS_IO_MUX_GPIO0_U);
-
-  //disable pull ups
-  PIN_PULLUP_DIS(PERIPHS_IO_MUX_GPIO2_U);
-  PIN_PULLUP_DIS(PERIPHS_IO_MUX_GPIO0_U);
-
-  GPIO_DIS_OUTPUT(CALIPER_CLOCK_IN_PIN);
-  GPIO_DIS_OUTPUT(CALIPER_DATA_IN_PIN);
-  */
+  //GPIOI_init(24, 40000, 1, 5000000, true);
+  initIsCalled = true;
 }
 
 bool ICACHE_FLASH_ATTR
@@ -85,10 +69,10 @@ readCaliper_BITBANG(float *sample) {
   uint32 i = 0;
 
   // just to be safe - set pins as input once again
-  caliperInit();
+  //caliperInit();
 
   //if clock is LOW wait until it turns to HIGH
-  for (i=0; caliperDigitalValue(CALIPER_CLOCK_IN_PIN); ) {
+  for (i=0; caliperDigitalValue(CLOCK_IN_PIN); ) {
     os_delay_us(1);
     i++;
     if(i==100000){
@@ -99,7 +83,7 @@ readCaliper_BITBANG(float *sample) {
   uint32 tempmicros = dro_utils_micros();
 
   //wait for the end of the HIGH pulse
-  for (i=0; !caliperDigitalValue(CALIPER_CLOCK_IN_PIN); ) {
+  for (i=0; !caliperDigitalValue(CLOCK_IN_PIN); ) {
     os_delay_us(1);
     i++;
     if(i==100000){
@@ -120,27 +104,28 @@ readCaliper_BITBANG(float *sample) {
 }
 
 
-bool ICACHE_FLASH_ATTR readCaliper(float *sample) {
-  uint32_t fastestPeriod = 0;
-  uint32_t slowestPeriod = 0;
-  uint16_t currentBit = 0;
-  uint8_t statusBits = 0;
-  uint32_t bitZeroPeriod = 0;
+bool ICACHE_FLASH_ATTR
+readCaliper(float *sample) {
+
+  if (!initIsCalled) {
+    os_printf("Error readCaliper: call caliperInit first!\n\r");
+    return false;
+  }
 
   uint16_t i = 0;
   uint32_t result;
   int32_t polishedResult;
 
   if (!GPIOI_isRunning()){
-    //os_printf("Setting new interrupt handler\n\r");
+    os_printf("Setting new interrupt handler\n\r");
     GPIOI_enableInterrupt();
   }
 
   for (i=0; i<100; i++) {
     os_delay_us(20000); // 20ms
 
-    if (! GPIOI_isRunning() ) {
-      result = GPIOI_getResult(&fastestPeriod, &slowestPeriod, &bitZeroPeriod, &statusBits, &currentBit);
+    if ( GPIOI_hasResults() ) {
+      result = GPIOI_sliceBits(0,23);
       polishedResult = result;
       if (polishedResult & 1<<20 ) {
         // bit 20 signals negative value
@@ -148,32 +133,21 @@ bool ICACHE_FLASH_ATTR readCaliper(float *sample) {
         polishedResult = -polishedResult; // set it to negative value
       }
 
-      //os_printf("Result is %d", polishedResult);
-      //os_delay_us(50);
-
-      //GPIOIprintBinary(result);
-      //os_printf(" %06X %07d fast:%d slow:%d zw:%d sb:%02X currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroPeriod, statusBits, currentBit );
-
-      *sample = 0.01f * polishedResult;
-
+      os_printf("Result is %d : ", polishedResult);
+      GPIOI_debugTrace(0,23);
+      *sample = CONVERT_TO_MM * polishedResult;
       return true;
-    } //else {
-      //os_printf("Still running, tmp result is: ");
-      //GPIOIprintBinary(result);
-      //os_printf(" %06X %07d fast:%d slow:%d zw:%d currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroPeriod, currentBit );
-    //}
+    }
   }
-  os_printf("GPIOI Still running, tmp result is: ");
-  result = GPIOI_getResult(&fastestPeriod, &slowestPeriod, &bitZeroPeriod, &statusBits, &currentBit);
-  GPIOIprintBinary(result);
-  os_printf(" %06X %07d fast:%d slow:%d zw:%d sb:%02X currB:%d\n\r", result, polishedResult, fastestPeriod, slowestPeriod, bitZeroPeriod, statusBits, currentBit );
 
-  os_printf(" readCaliper timeout. Heartbeat:%d\n\r", GPIOI_getHeartbeat());
+  os_printf("GPIOI Still running, tmp result is:\n");
+  GPIOI_debugTrace(0,23);
   return false;
 }
 
 
-bool ICACHE_FLASH_ATTR readCaliperAsString(char *buf, int bufLen, int *bytesWritten){
+bool ICACHE_FLASH_ATTR
+readCaliperAsString(char *buf, int bufLen, int *bytesWritten){
   float sample = 0.0;
   bool rv = readCaliper(&sample);
   if(rv){
