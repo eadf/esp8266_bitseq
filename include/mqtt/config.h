@@ -52,8 +52,8 @@ typedef struct {
     uint8 pad[3];
 } SAVE_FLAG;
 
-void CFG_Save();
-void CFG_Load();
+void CFG_Save(void);
+void CFG_Load(void);
 
 extern SYSCFG sysCfg;
 
