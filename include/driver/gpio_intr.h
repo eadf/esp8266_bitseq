@@ -9,6 +9,7 @@
 #define INCLUDE_DRIVER_GPIO_INTR_H_
 
 #include "c_types.h"
+#include "os_type.h"
 
 #define DRIVER_GPIO_INTR_ENABLE_HEARTBEAT
 
@@ -45,8 +46,9 @@ typedef struct {
   volatile uint8_t  *data;
 } GPIOI_Result;
 
-void GPIOI_init(uint16_t numberOfBits, uint32_t maxClockPeriod, uint32_t minStartPeriod, uint32_t maxStartPeriod, bool onRising);
+void GPIOI_init(uint16_t numberOfBits, uint32_t maxClockPeriod, uint32_t minStartPeriod, uint32_t maxStartPeriod, bool onRising, os_timer_func_t *resultCb);
 bool GPIOI_hasResults(void);
+bool GPIOI_isIdle(void);
 bool GPIOI_isRunning(void);
 void GPIOI_enableInterrupt(void);
 void GPIOI_disableInterrupt(void);

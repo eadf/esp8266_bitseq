@@ -10,151 +10,104 @@
 #include "osapi.h"
 #include "driver/dro_utils.h"
 
-static const int CLOCK_IN_PIN = 0;
-static const int DATA_IN_PIN = 2;
 static const float CONVERT_TO_MM = 0.01f;
-static bool initIsCalled = false;
+static const float CONVERT_TO_INCH = 0.0005f;
 
-/* forward declarations to shut up the compiler -Werror=missing-prototypes */
-bool caliperDigitalValue(int pin);
-bool caliperDecode_BITBANG(float *returnValue);
-bool readCaliper_BITBANG(float *sample);
-
-/**
- * The original arduino source code was made for an inverting level shifter.
- * I'm using non-inverting hardware, so the program logic has to be inverted back again :/
- */
-bool caliperDigitalValue(int pin) {
-  return GPIO_INPUT_GET(pin) != 1;
-}
-
-bool ICACHE_FLASH_ATTR caliperDecode_BITBANG(float *returnValue) {
-  int sign=1;
-  long value=0;
-  int i=0;
-  for (i=0;i<23;i++) {
-    while (caliperDigitalValue(CLOCK_IN_PIN)) { os_delay_us(1); } //wait until clock returns to HIGH- the first bit is not needed
-    while (!caliperDigitalValue(CLOCK_IN_PIN)) { os_delay_us(1);} //wait until clock returns to LOW
-    if (!caliperDigitalValue(DATA_IN_PIN)) {
-      if (i<20) {
-        value |= 1<<i;
-      }
-      if (i==20) {
-        sign=-1;
-      }
-    }
-  }
-  *returnValue = (float)(value*sign)/100.0;
-
-  return true;
-}
-
-/**
- * Will set the input pin to inputs.
- */
-void ICACHE_FLASH_ATTR
-caliperInit(void) {
-  // Acquire 24 pins
-  // at most 900 us between clock pulses
-  // at least 10 ms between blocks
-  // at most 5 sec between blocks
-  // rising edge
-  GPIOI_init(24, 900, 10000, 5000000, true);
-  //GPIOI_init(24, 40000, 1, 5000000, true);
-  initIsCalled = true;
-}
+static os_timer_func_t *userCallback = NULL;
 
 bool ICACHE_FLASH_ATTR
-readCaliper_BITBANG(float *sample) {
-  uint32 i = 0;
-
-  // just to be safe - set pins as input once again
-  //caliperInit();
-
-  //if clock is LOW wait until it turns to HIGH
-  for (i=0; caliperDigitalValue(CLOCK_IN_PIN); ) {
-    os_delay_us(1);
-    i++;
-    if(i==100000){
-      //os_printf("Caliper: No Data 1\r\n");
-      return false;
-    }
-  }
-  uint32 tempmicros = dro_utils_micros();
-
-  //wait for the end of the HIGH pulse
-  for (i=0; !caliperDigitalValue(CLOCK_IN_PIN); ) {
-    os_delay_us(1);
-    i++;
-    if(i==100000){
-      //os_printf("Caliper: No Data 2\r\n");
-      return false;
-    }
-  }
-
-  uint32 duration = dro_utils_micros()-tempmicros;
-  if (duration>500) { //if the HIGH pulse was longer than 500 micros we are at the start of a new bit sequence
-    caliperDecode_BITBANG(sample); //caliperDecode the bit sequence
-    //os_printf("started scanning and found something %d us later. Found %d\r\n" , duration, (int)(100* *sample));
+startCaliperSample(void) {
+  if (!GPIOI_isRunning()){
+    //os_printf("Setting new interrupt handler\n\r");
+    GPIOI_enableInterrupt();
     return true;
   } else {
-    os_printf("Caliper: started scanning and gave up %d us later.\r\n" , duration);
     return false;
   }
 }
 
 
 bool ICACHE_FLASH_ATTR
-readCaliper(float *sample) {
+readCaliper(float *sample, bool *isMM) {
 
-  if (!initIsCalled) {
+  if (userCallback==NULL) {
     os_printf("Error readCaliper: call caliperInit first!\n\r");
     return false;
   }
 
-  uint16_t i = 0;
-  uint32_t result;
-  int32_t polishedResult;
+  if ( GPIOI_hasResults() ) {
+    int32_t result = GPIOI_sliceBits(0,23);
 
-  if (!GPIOI_isRunning()){
-    os_printf("Setting new interrupt handler\n\r");
-    GPIOI_enableInterrupt();
-  }
-
-  for (i=0; i<100; i++) {
-    os_delay_us(20000); // 20ms
-
-    if ( GPIOI_hasResults() ) {
-      result = GPIOI_sliceBits(0,23);
-      polishedResult = result;
-      if (polishedResult & 1<<20 ) {
-        // bit 20 signals negative value
-        polishedResult &= 0xEFFFFF; // lower bit 20 again
-        polishedResult = -polishedResult; // set it to negative value
-      }
-
-      os_printf("Result is %d : ", polishedResult);
-      GPIOI_debugTrace(0,23);
-      *sample = CONVERT_TO_MM * polishedResult;
-      return true;
+    if(result & 1<<23){
+      *isMM = false;
+      // lower bit 23 again
+      result &= ~(1<<23);
+    } else {
+      *isMM = true;
     }
-  }
+    if (result & 1<<20 ) {
+      // bit 20 signals negative value
+      result &= ~(1<<20); // lower bit 20 again
+      result = -result; // set it to negative value
+    }
 
-  os_printf("GPIOI Still running, tmp result is:\n");
-  GPIOI_debugTrace(0,23);
-  return false;
+    os_printf("Result is %d : ", result);
+    GPIOI_debugTrace(0,23);
+    if (*isMM){
+      *sample = CONVERT_TO_MM * result;
+    } else {
+      *sample = CONVERT_TO_INCH * result;
+    }
+    return true;
+  } else {
+    os_printf("GPIOI Still running, tmp result is:\n");
+    GPIOI_debugTrace(0,23);
+    return false;
+  }
 }
 
 
 bool ICACHE_FLASH_ATTR
 readCaliperAsString(char *buf, int bufLen, int *bytesWritten){
   float sample = 0.0;
-  bool rv = readCaliper(&sample);
+  bool isMM = true;
+  bool rv = readCaliper(&sample, &isMM);
   if(rv){
-    *bytesWritten = dro_utils_float_2_string(100.0f*sample, 100, buf, bufLen);
+    if(isMM){
+      *bytesWritten = dro_utils_float_2_string(100.0f*sample, 100, buf, bufLen);
+    } else {
+      *bytesWritten = dro_utils_float_2_string(10000.0f*sample, 10000, buf, bufLen);
+    }
+    if(bufLen > *bytesWritten + 4) {
+      if(isMM){
+        buf[*bytesWritten+0] = 'm';
+        buf[*bytesWritten+1] = 'm';
+        buf[*bytesWritten+2] = 0;
+        *bytesWritten = *bytesWritten+3;
+      } else {
+        buf[*bytesWritten+0] = '"';
+        buf[*bytesWritten+1] = 0;
+        *bytesWritten = *bytesWritten+2;
+      }
+    }
   } else {
     *bytesWritten = 0;
     buf[0] = 0;
   }
   return rv;
+}
+
+/**
+ * Will set the input pin to inputs.
+ */
+void ICACHE_FLASH_ATTR
+caliperInit(os_timer_func_t *resultCb) {
+  // Acquire 24 bits
+  // at most 900 us between clock pulses
+  // at least 10 ms between blocks
+  // at most 5 sec between blocks
+  // rising edge
+
+  GPIOI_init(24, 900, 10000, 5000000, true, resultCb);
+  userCallback = resultCb;
 }

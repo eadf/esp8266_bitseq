@@ -13,24 +13,30 @@ int ICACHE_FLASH_ATTR
 dro_utils_float_2_string(float sample, int divisor, char *buf, int bufLen) {
   char localBuffer[256];
 
-  int s = sample>0?1:-1;
-  sample = sample*s;
+  char *sign;
+  if (sample>=0){
+    sign = "";
+  } else {
+    sign = "-";
+    sample = -sample;
+  }
+
   int h = (int)(sample / divisor);
   int r = (int)(sample - h*divisor);
   int size = 0;
 
   switch (divisor){
-    case 1: size = os_sprintf(localBuffer, "%d",h);
+    case 1: size = os_sprintf(localBuffer, "%s%d",sign,h);
       break;
-    case 10: size = os_sprintf(localBuffer, "%d.%01d", s*h, r);
+    case 10: size = os_sprintf(localBuffer, "%s%d.%01d",sign,h, r);
       break;
-    case 100: size = os_sprintf(localBuffer, "%d.%02d", s*h, r);
+    case 100: size = os_sprintf(localBuffer, "%s%d.%02d",sign,h, r);
       break;
-    case 1000: size = os_sprintf(localBuffer, "%d.%03d", s*h, r);
+    case 1000: size = os_sprintf(localBuffer, "%s%d.%03d",sign,h, r);
       break;
-    case 10000: size = os_sprintf(localBuffer, "%d.%04d", s*h, r);
+    case 10000: size = os_sprintf(localBuffer, "%s%d.%04d",sign,h, r);
       break;
-    case 100000: size = os_sprintf(localBuffer, "%d.%05d", s*h, r);
+    case 100000: size = os_sprintf(localBuffer, "%s%d.%05d",sign,h, r);
       break;
     default:
       os_printf("dro_utils_float_2_string: could not recognize divisor: %d\r\n", divisor);

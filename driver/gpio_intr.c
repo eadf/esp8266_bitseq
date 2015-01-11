@@ -11,16 +11,16 @@
 #include "driver/gpio_intr.h"
 #include "osapi.h"
 #include "ets_sys.h"
-#include "os_type.h"
 #include "gpio.h"
 #include "mem.h"
 
 static const uint16_t GPIOI_CLK_PIN = 0;
 static const uint16_t GPIOI_DATA_PIN = 2;
-//static uint8_t sampleBuffer[1024];
 
 volatile static GPIOI_Setting settings;
 volatile static GPIOI_Result results;
+
+static volatile os_timer_t callbackTimer;
 
 void GPIOI_clearResults(void);
 void GPIOI_clearSampleData(void);
@@ -217,6 +217,7 @@ GPIOI_inputSampleBit(uint8_t sample) {
     GPIOI_disableInterrupt();
     results.statusBits |= GPIOI_RESULT_IS_READY;
     results.statusBits &= ~GPIOI_ISRUNNING;
+    os_timer_arm(&callbackTimer, 10, 0);
   }
 }
 
@@ -230,20 +231,28 @@ GPIOI_CLK_PIN_intr_handler(int8_t key) {
   GPIOI_inputSampleBit(GPIO_INPUT_GET(GPIOI_DATA_PIN));
 }
 
-
-volatile GPIOI_Result* ICACHE_FLASH_ATTR
+volatile GPIOI_Result volatile* ICACHE_FLASH_ATTR
 GPIOI_getResult(void) {
   return &results;
 }
 
-bool GPIOI_isRunning(void) {
+bool ICACHE_FLASH_ATTR
+GPIOI_isRunning(void) {
   bool rv = (results.statusBits & GPIOI_INITIATED) &&
             (results.statusBits & GPIOI_ISRUNNING);
   //os_printf("GPIOI: GPIOI_isRunning");GPIOI_printByteAsBinary(results.statusBits);os_printf(" rv = %d\n", rv);
   return rv;
 }
 
-bool
+bool ICACHE_FLASH_ATTR
+GPIOI_isIdle(void) {
+  bool rv = (results.statusBits & GPIOI_INITIATED) &&
+            !(results.statusBits & GPIOI_ISRUNNING);
+  //os_printf("GPIOI: GPIOI_isRunning");GPIOI_printByteAsBinary(results.statusBits);os_printf(" rv = %d\n", rv);
+  return rv;
+}
+
+bool ICACHE_FLASH_ATTR
 GPIOI_hasResults(void) {
   bool rv = (results.statusBits & GPIOI_INITIATED) &&
             (results.statusBits & GPIOI_RESULT_IS_READY);
@@ -283,9 +292,14 @@ GPIOI_debugTrace(uint16_t startBit, uint16_t endBit) {
  * maxClockPeriod: the maximum length of a clock period
  * minStartPeriod: at least this many us between blocks
  * maxStartPeriod: at most this many us between blocks
+ * resultCb : the callback to call when results are available
  */
-void
-GPIOI_init(uint16_t numberOfBits, uint32_t maxClockPeriod, uint32_t minStartPeriod, uint32_t maxStartPeriod, bool onRising) {
+void ICACHE_FLASH_ATTR
+GPIOI_init(uint16_t numberOfBits, uint32_t maxClockPeriod, uint32_t minStartPeriod, uint32_t maxStartPeriod, bool onRising, os_timer_func_t *resultCb) {
+
+  //Setup callback timer
+  os_timer_disarm(&callbackTimer);
+  os_timer_setfn(&callbackTimer, resultCb, NULL);
 
   settings.maxClockPeriod = maxClockPeriod;
   settings.minStartPeriod = minStartPeriod;
@@ -293,17 +307,9 @@ GPIOI_init(uint16_t numberOfBits, uint32_t maxClockPeriod, uint32_t minStartPeri
   settings.numberOfBits = numberOfBits;
   settings.onRising = onRising;
 
-  int size = (numberOfBits>>3) +2;
-  os_printf("****\n");
-  os_printf("GPIOI_init: Allocating %d bytes for receiver buffer.\n", size);
-  os_printf("****\n");
-
+  //int size = (numberOfBits>>3) +2;
   results.data = (uint8_t*)os_malloc(512);
   results.statusBits = 0;
-
-  os_printf("****\n");
-  os_printf("GPIOI_init: Allocated %d bytes for receiver buffer.\n", size);
-  os_printf("****\n");
 
   GPIOI_clearResults();
 
