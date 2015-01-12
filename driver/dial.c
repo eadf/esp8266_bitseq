@@ -15,7 +15,7 @@ static const float CONVERT_TO_MM = 1.2397707131274277f;
 static os_timer_func_t *userCallback = NULL;
 
 bool ICACHE_FLASH_ATTR
-readDial(float *sample)
+dial_read(float *sample)
 {
   if (userCallback==NULL) {
     os_printf("Error readDial: call dialInit first!\n\r");
@@ -46,7 +46,7 @@ readDial(float *sample)
 }
 
 bool ICACHE_FLASH_ATTR
-startDialSample(void) {
+dial_startSampling(void) {
   if (!GPIOI_isRunning()){
     //os_printf("Setting new interrupt handler\n\r");
     GPIOI_enableInterrupt();
@@ -57,9 +57,9 @@ startDialSample(void) {
 }
 
 bool ICACHE_FLASH_ATTR
-readDialAsString(char *buf, int bufLen, int *bytesWritten) {
+dial_readAsString(char *buf, int bufLen, int *bytesWritten) {
   float sample = 0.0;
-  bool rv = readDial(&sample);
+  bool rv = dial_read(&sample);
   if(rv){
     *bytesWritten = dro_utils_float_2_string(10000.0f*sample, 10000, buf, bufLen);
     // the unit is always sent as mm from the dial, regardless of the inch/mm button
@@ -76,16 +76,16 @@ readDialAsString(char *buf, int bufLen, int *bytesWritten) {
   return rv;
 }
 
-bool ICACHE_FLASH_ATTR
-isDialIdle(void) {
+/*bool ICACHE_FLASH_ATTR
+dial_isIdle(void) {
   return GPIOI_isIdle();
-}
+}*/
 
 /**
  * Setup the hardware and initiate callbacks
  */
 void ICACHE_FLASH_ATTR
-dialInit(os_timer_func_t *resultCb) {
+dial_init(os_timer_func_t *resultCb) {
 
   // Acquire 24 bits
   // at most 18 us between clock pulses

@@ -16,9 +16,9 @@ static const float CONVERT_TO_INCH = 0.0005f;
 static os_timer_func_t *userCallback = NULL;
 
 bool ICACHE_FLASH_ATTR
-startCaliperSample(void) {
+caliper_startSampling(void) {
   if (!GPIOI_isRunning()){
-    //os_printf("Setting new interrupt handler\n\r");
+    //os_printf("caliper_startSampling: Setting new interrupt handler\n\r");
     GPIOI_enableInterrupt();
     return true;
   } else {
@@ -28,10 +28,10 @@ startCaliperSample(void) {
 
 
 bool ICACHE_FLASH_ATTR
-readCaliper(float *sample, bool *isMM) {
+caliper_read(float *sample, bool *isMM) {
 
   if (userCallback==NULL) {
-    os_printf("Error readCaliper: call caliperInit first!\n\r");
+    os_printf("Error caliper_read: call caliperInit first!\n\r");
     return false;
   }
 
@@ -68,10 +68,10 @@ readCaliper(float *sample, bool *isMM) {
 
 
 bool ICACHE_FLASH_ATTR
-readCaliperAsString(char *buf, int bufLen, int *bytesWritten){
+caliper_readAsString(char *buf, int bufLen, int *bytesWritten){
   float sample = 0.0;
   bool isMM = true;
-  bool rv = readCaliper(&sample, &isMM);
+  bool rv = caliper_read(&sample, &isMM);
   if(rv){
     if(isMM){
       *bytesWritten = dro_utils_float_2_string(100.0f*sample, 100, buf, bufLen);
@@ -101,7 +101,7 @@ readCaliperAsString(char *buf, int bufLen, int *bytesWritten){
  * Will set the input pin to inputs.
  */
 void ICACHE_FLASH_ATTR
-caliperInit(os_timer_func_t *resultCb) {
+caliper_init(os_timer_func_t *resultCb) {
   // Acquire 24 bits
   // at most 900 us between clock pulses
   // at least 10 ms between blocks

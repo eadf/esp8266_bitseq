@@ -141,7 +141,7 @@ initiateCaliperSensorSamplingTimer(void) {
   // This will initiate a callback to caliperdialSensorDataCb when results are available
   int nextPeriod = SENSOR_SAMPLE_PERIOD;
   if (broker_established) {
-    if ( !startCaliperSample() ) {
+    if ( !caliper_startSampling() ) {
       nextPeriod = SENSOR_SAMPLE_PERIOD/2;
       os_printf("Caliper sensor is still running, tmp result is:\n");
       GPIOI_debugTrace(0,23);
@@ -155,7 +155,7 @@ void ICACHE_FLASH_ATTR
 caliperSensorDataCb(void) {
   if (broker_established) {
     int bytesWritten = 0;
-    if (readCaliperAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
+    if (caliper_readAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
       INFO("MQTT caliperSensorDataCb: received %s\r\n", sendbuffer);
       MQTT_Publish( &mqttClient, clientid, sendbuffer, bytesWritten, 0, false);
     }
@@ -167,7 +167,7 @@ initiateDialSensorSamplingTimer(void) {
   // This will initiate a callback to dialSensorDataCb when results are available
   int nextPeriod = SENSOR_SAMPLE_PERIOD;
   if (broker_established) {
-    if ( !startDialSample() ) {
+    if ( !dial_startSampling() ) {
       nextPeriod = SENSOR_SAMPLE_PERIOD/2;
       os_printf("Dial sensor is still running, tmp result is:\n");
       GPIOI_debugTrace(0,23);
@@ -181,7 +181,7 @@ void ICACHE_FLASH_ATTR
 dialSensorDataCb(void) {
   if (broker_established) {
     int bytesWritten = 0;
-    if (readDialAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
+    if (dial_readAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
       INFO("MQTT dialSensorDataCb: received %s\r\n", sendbuffer);
       MQTT_Publish( &mqttClient, clientid, sendbuffer, bytesWritten, 0, false);
     }
@@ -217,10 +217,10 @@ void user_init(void)
 	CFG_Load();
 	gpio_init();
 #ifdef USE_DIAL_SENSOR
-	dialInit((os_timer_func_t*) dialSensorDataCb);
+	dial_init((os_timer_func_t*) dialSensorDataCb);
 #endif
 #ifdef USE_CALIPER_SENSOR
-	caliperInit((os_timer_func_t*) caliperSensorDataCb);
+	caliper_init((os_timer_func_t*) caliperSensorDataCb);
 #endif
 #ifdef USE_MAX75_SENSOR
 	max6675_init();

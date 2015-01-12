@@ -11,10 +11,10 @@
 #include "c_types.h"
 #include "os_type.h"
 
-bool readDial(float *sample);
-bool readDialAsString(char *sample, int bufLen, int *bytesWritten);
-bool isDialIdle(void);
-bool startDialSample(void);
-void dialInit(os_timer_func_t *resultCb);
+bool dial_read(float *sample);
+bool dial_readAsString(char *sample, int bufLen, int *bytesWritten);
+//bool dial_isIdle(void);
+bool dial_startSampling(void);
+void dial_init(os_timer_func_t *resultCb);
 
 #endif /* USER_dial_H_ */

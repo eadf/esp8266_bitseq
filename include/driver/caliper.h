@@ -11,9 +11,9 @@
 #include "c_types.h" // for bool
 #include "os_type.h"
 
-bool readCaliper(float *sample, bool *isMM);
-bool readCaliperAsString(char *sample, int bufLen, int *bytesWritten);
-bool startCaliperSample(void);
-void caliperInit(os_timer_func_t *resultCb);
+bool caliper_read(float *sample, bool *isMM);
+bool caliper_readAsString(char *sample, int bufLen, int *bytesWritten);
+bool caliper_startSampling(void);
+void caliper_init(os_timer_func_t *resultCb);
 
 #endif /* USER_CALIPER_H_ */
