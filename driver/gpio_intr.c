@@ -14,8 +14,8 @@
 #include "gpio.h"
 #include "mem.h"
 
-static const uint16_t GPIOI_CLK_PIN = 0;
-static const uint16_t GPIOI_DATA_PIN = 2;
+static const uint16_t GPIOI_CLK_PIN = 0;   // only pin 0 is implemented
+static const uint16_t GPIOI_DATA_PIN = 3;  // pin 2 or 3 is implemented
 
 volatile static GPIOI_Setting settings;
 volatile static GPIOI_Result results;
@@ -25,7 +25,7 @@ static volatile os_timer_t callbackTimer;
 void GPIOI_clearResults(void);
 void GPIOI_clearSampleData(void);
 uint32_t GPIOI_sliceBits(uint16_t start, uint16_t end);
-void GPIOI_inputSampleBit(uint8_t sample);
+void GPIOI_inputSampleBit(uint32_t sample);
 
 void ICACHE_FLASH_ATTR
 GPIOI_disableInterrupt(void) {
@@ -153,9 +153,7 @@ GPIOI_sliceBits(uint16_t start, uint16_t end){
 }
 
 void
-GPIOI_inputSampleBit(uint8_t sample) {
-  // sample must be 1 or 0
-  sample &= 1;
+GPIOI_inputSampleBit(uint32_t sample) {
 
 #ifdef DRIVER_GPIO_INTR_ENABLE_HEARTBEAT
   results.heartbeat +=1;
@@ -313,30 +311,49 @@ GPIOI_init(uint16_t numberOfBits, uint32_t maxClockPeriod, uint32_t minStartPeri
 
   GPIOI_clearResults();
 
-  //set gpio0 as gpio pin
-  PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);
-  //set gpio2 as gpio pin
-  PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
+  if (0 == GPIOI_CLK_PIN){
+    //set gpio0 as gpio pin
+    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);
+    //disable pull downs
+    PIN_PULLDWN_DIS(PERIPHS_IO_MUX_GPIO0_U);
+    //disable pull ups
+    PIN_PULLUP_DIS(PERIPHS_IO_MUX_GPIO0_U);
+    // disable output
+    GPIO_DIS_OUTPUT(GPIOI_CLK_PIN);
+    ETS_GPIO_INTR_ATTACH(GPIOI_CLK_PIN_intr_handler,0);
+    ETS_GPIO_INTR_DISABLE();
+    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);
+    gpio_output_set(0, 0, 0, GPIO_ID_PIN(GPIOI_CLK_PIN));
+    gpio_register_set(GPIO_PIN_ADDR(0), GPIO_PIN_INT_TYPE_SET(GPIO_PIN_INTR_DISABLE)
+        | GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_DISABLE)
+        | GPIO_PIN_SOURCE_SET(GPIO_AS_PIN_SOURCE));
+  } else {
+    os_printf("GPIOI_init: Error GPIOI_CLK_PIN==%d is not implemented", GPIOI_CLK_PIN);
+    return;
+  }
 
-  //disable pull downs
-  PIN_PULLDWN_DIS(PERIPHS_IO_MUX_GPIO2_U);
-  PIN_PULLDWN_DIS(PERIPHS_IO_MUX_GPIO0_U);
-
-  //disable pull ups
-  PIN_PULLUP_DIS(PERIPHS_IO_MUX_GPIO2_U);
-  PIN_PULLUP_DIS(PERIPHS_IO_MUX_GPIO0_U);
-
-  // disable output
-  GPIO_DIS_OUTPUT(GPIOI_CLK_PIN);
-  GPIO_DIS_OUTPUT(GPIOI_DATA_PIN);
-
-  ETS_GPIO_INTR_ATTACH(GPIOI_CLK_PIN_intr_handler,0);
-  ETS_GPIO_INTR_DISABLE();
-  PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);
-  gpio_output_set(0, 0, 0, GPIO_ID_PIN(GPIOI_CLK_PIN));
-  gpio_register_set(GPIO_PIN_ADDR(0), GPIO_PIN_INT_TYPE_SET(GPIO_PIN_INTR_DISABLE)
-      | GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_DISABLE)
-      | GPIO_PIN_SOURCE_SET(GPIO_AS_PIN_SOURCE));
+  if (2 == GPIOI_DATA_PIN){
+    //set gpio2 as gpio pin
+    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
+    //disable pull downs
+    PIN_PULLDWN_DIS(PERIPHS_IO_MUX_GPIO2_U);
+    //disable pull ups
+    PIN_PULLUP_DIS(PERIPHS_IO_MUX_GPIO2_U);
+    // disable output
+    GPIO_DIS_OUTPUT(GPIOI_DATA_PIN);
+  } else if (3 == GPIOI_DATA_PIN) {
+    //set gpio2 as gpio pin
+    PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, FUNC_GPIO3);
+    //disable pull downs
+    PIN_PULLDWN_DIS(PERIPHS_IO_MUX_U0RXD_U);
+    //disable pull ups
+    PIN_PULLUP_DIS(PERIPHS_IO_MUX_U0RXD_U);
+    // disable output
+    GPIO_DIS_OUTPUT(GPIOI_DATA_PIN);
+  } else {
+    os_printf("GPIOI_init: Error GPIOI_DATA_PIN==%d is not implemented", GPIOI_DATA_PIN);
+    return;
+  }
 
   //clear gpio status
   GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(0));
