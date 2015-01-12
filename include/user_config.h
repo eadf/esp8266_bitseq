@@ -6,7 +6,7 @@
 // ****************  IMPORTANT *********************** 
 // Whenever you change anything in this file you will have to change/increment the value of 
 // CFG_HOLDER or your changes will not be used the next time you flash your chip
-#define CFG_HOLDER	0x00FF55A5
+#define CFG_HOLDER	0x00FF55A6
 
 
 #define CFG_LOCATION	0x3C	/* Please don't change or if you know what you doing */
@@ -30,8 +30,10 @@
 #define MQTT_CONNTECT_TIMER 	5
 #define SENSOR_SAMPLE_PERIOD 1000
 
-// only one of USE_DIAL_SENSOR, USE_CALIPER_SENSOR or USE_MAX75_SENSOR can be active at a time
+// only one of USE_WATT_SENSOR, USE_DIAL_SENSOR, USE_CALIPER_SENSOR or USE_MAX75_SENSOR can be active at a time
 #define USE_DIAL_SENSOR
 //#define USE_CALIPER_SENSOR
 //#define USE_MAX75_SENSOR
+//#define USE_WATT_SENSOR
+
 #endif

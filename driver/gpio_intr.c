@@ -306,7 +306,7 @@ GPIOI_init(uint16_t numberOfBits, uint32_t maxClockPeriod, uint32_t minStartPeri
   settings.onRising = onRising;
 
   //int size = (numberOfBits>>3) +2;
-  results.data = (uint8_t*)os_malloc(512);
+  results.data = (uint8_t*)os_malloc(512); // 4096 bits
   results.statusBits = 0;
 
   GPIOI_clearResults();

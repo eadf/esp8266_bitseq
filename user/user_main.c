@@ -47,16 +47,25 @@
 #ifdef USE_DIAL_SENSOR
 #undef USE_CALIPER_SENSOR
 #undef USE_MAX75_SENSOR
+#undef USE_WATT_SENSOR
 #endif
 
 #ifdef USE_CALIPER_SENSOR
 #undef USE_DIAL_SENSOR
 #undef USE_MAX75_SENSOR
+#undef USE_WATT_SENSOR
 #endif
 
 #ifdef USE_MAX75_SENSOR
 #undef USE_DIAL_SENSOR
 #undef USE_CALIPER_SENSOR
+#undef USE_WATT_SENSOR
+#endif
+
+#ifdef USE_WATT_SENSOR
+#undef USE_DIAL_SENSOR
+#undef USE_CALIPER_SENSOR
+#undef USE_MAX75_SENSOR
 #endif
 
 MQTT_Client mqttClient;
@@ -78,6 +87,8 @@ void performMaxSensorSamplingTimer(void);
 void initiateCaliperSensorSamplingTimer(void);
 void initiateDialSensorSamplingTimer(void);
 void dialSensorDataCb(void);
+void initiateWattSensorSamplingTimer(void);
+void wattSensorDataCb(void);
 void caliperSensorDataCb(void);
 void user_init(void);
 
@@ -189,6 +200,32 @@ dialSensorDataCb(void) {
 }
 
 void ICACHE_FLASH_ATTR
+initiateWattSensorSamplingTimer(void) {
+  // This will initiate a callback to dialSensorDataCb when results are available
+  int nextPeriod = SENSOR_SAMPLE_PERIOD;
+  if (broker_established) {
+    if ( !watt_startSampling() ) {
+      nextPeriod = SENSOR_SAMPLE_PERIOD/2;
+      os_printf("Watt sensor is still running, tmp result is:\n");
+      GPIOI_debugTrace(0,23);
+    }
+  }
+  os_timer_disarm(&sensor_timer);
+  os_timer_arm(&sensor_timer, nextPeriod, 0);
+}
+
+void ICACHE_FLASH_ATTR
+wattSensorDataCb(void) {
+  if (broker_established) {
+    int bytesWritten = 0;
+    if (watt_readAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
+      INFO("MQTT wattSensorDataCb: received %s\r\n", sendbuffer);
+      MQTT_Publish( &mqttClient, clientid, sendbuffer, bytesWritten, 0, false);
+    }
+  }
+}
+
+void ICACHE_FLASH_ATTR
 performMaxSensorSamplingTimer(void) {
   // This does not initiate a callback. The sampling is synchronous
   int nextPeriod = SENSOR_SAMPLE_PERIOD;
@@ -225,7 +262,9 @@ void user_init(void)
 #ifdef USE_MAX75_SENSOR
 	max6675_init();
 #endif
-
+#ifdef USE_WATT_SENSOR
+  watt_init((os_timer_func_t*) wattSensorDataCb);
+#endif
 	MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, SEC_NONSSL);
 	MQTT_InitClient(&mqttClient, sysCfg.device_id, sysCfg.mqtt_user, sysCfg.mqtt_pass, sysCfg.mqtt_keepalive);
 	MQTT_OnConnected(&mqttClient, mqttConnectedCb);
@@ -247,6 +286,9 @@ void user_init(void)
 #endif
 #ifdef USE_MAX75_SENSOR
   os_timer_setfn(&sensor_timer, (os_timer_func_t*) performMaxSensorSamplingTimer, NULL);
+#endif
+#ifdef USE_WATT_SENSOR
+  os_timer_setfn(&sensor_timer, (os_timer_func_t*) initiateWattSensorSamplingTimer, NULL);
 #endif
   os_timer_arm(&sensor_timer, SENSOR_SAMPLE_PERIOD, 0);
 }
