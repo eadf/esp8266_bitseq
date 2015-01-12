@@ -102,12 +102,15 @@ caliper_readAsString(char *buf, int bufLen, int *bytesWritten){
  */
 void ICACHE_FLASH_ATTR
 caliper_init(os_timer_func_t *resultCb) {
+  // clock has a period of 333 us to 723 us
+  // blocks are about 100ms apart
+  //
   // Acquire 24 bits
-  // at most 900 us between clock pulses
+  // at most 800 us between clock pulses
   // at least 10 ms between blocks
   // at most 5 sec between blocks
   // rising edge
 
-  GPIOI_init(24, 900, 10000, 5000000, true, resultCb);
+  GPIOI_init(24, 800, 10000, 5000000, true, resultCb);
   userCallback = resultCb;
 }
