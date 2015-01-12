@@ -13,9 +13,9 @@
 #include "math.h"
 #include "driver/dro_utils.h"
 
-#define CS_PIN 0    // This is GIOP0, connect a 10K pullup to Vcc to avoid problems with the bootloader starting
-#define SCLK_PIN 2  // This is GIOP2, connect a 10K pulldown to GND to avoid problems with the bootloader starting
-#define MISO_PIN 3  // this pin is normally RX. So don't have your hardware connected while flashing.
+static const int ICS_PIN=2;   // !Chip Select: This is GIOP2, connect a 10K pull down resistor to GND to avoid problems with the bootloader starting
+static const int CLOCK_PIN=0; // Clock       : This is GIOP0, connect a 10K pull up resistor to Vcc to avoid problems with the bootloader starting
+static const int SO_PIN=3;    // Slave Output: This pin is normally RX. So don't have your hardware connected while flashing.
 
 void max6675_delay(uint32 microseconds);
 void max6675_delay_between_clock(void);
@@ -56,11 +56,11 @@ max6675_digitalRead(unsigned int pin) {
 *******************************************************************************/
 void ICACHE_FLASH_ATTR
 max6675_init(void) {
-  //set gpio3 as gpio pin CS_PIN
+  //set gpio3 as gpio pin
   PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, FUNC_GPIO3);
-  //set gpio2 as gpio pin SCLK_PIN
+  //set gpio2 as gpio pin
   PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
-  //set gpio0 as gpio pin MISO_PIN
+  //set gpio0 as gpio pin
   PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);
 
   //disable pull downs
@@ -73,9 +73,9 @@ max6675_init(void) {
   PIN_PULLUP_DIS(PERIPHS_IO_MUX_GPIO0_U);
   PIN_PULLUP_DIS(PERIPHS_IO_MUX_U0RXD_U);
 
-  max6675_digitalWrite(CS_PIN, true);
-  max6675_digitalWrite(SCLK_PIN, false);
-  GPIO_DIS_OUTPUT(MISO_PIN);
+  max6675_digitalWrite(ICS_PIN, true);
+  max6675_digitalWrite(CLOCK_PIN, false);
+  GPIO_DIS_OUTPUT(SO_PIN);
 }
 
 uint8_t ICACHE_FLASH_ATTR
@@ -84,13 +84,13 @@ max6675_readByte(void) {
   uint8_t d = 0;
   for (i=7; i>=0; i--)
   {
-    max6675_digitalWrite(SCLK_PIN, LOW);
+    max6675_digitalWrite(CLOCK_PIN, LOW);
     max6675_delay_between_clock();
-    if (max6675_digitalRead(MISO_PIN)) {
+    if (max6675_digitalRead(SO_PIN)) {
       //set the bit to 0 no matter what
       d |= (1 << i);
     }
-    max6675_digitalWrite(SCLK_PIN, HIGH);
+    max6675_digitalWrite(CLOCK_PIN, HIGH);
     max6675_delay_between_clock();
   }
   return d;
@@ -99,20 +99,18 @@ max6675_readByte(void) {
 bool ICACHE_FLASH_ATTR
 max6675_readTemp(float* sample, bool celcius)
 {
-  //max6675_init(); // just a test
-
   uint16_t v;
-  max6675_digitalWrite(CS_PIN, LOW);
+  max6675_digitalWrite(ICS_PIN, LOW);
   max6675_delay_between_clock();
   v = max6675_readByte();
   v <<= 8;
   v |= max6675_readByte();
-  max6675_digitalWrite(SCLK_PIN, LOW);
+  max6675_digitalWrite(CLOCK_PIN, LOW);
   max6675_delay_between_clock();
-  max6675_digitalWrite(CS_PIN, HIGH);
+  max6675_digitalWrite(ICS_PIN, HIGH);
   if (v & 0x4) {
     // uh oh, no thermocouple attached!
-    os_printf("The max6675 thinks the thermocouple is lose.\r\n", v);
+    os_printf("The max6675 chip thinks the thermocouple is lose.\r\n", v);
     *sample = NAN;
     return false;
   }
