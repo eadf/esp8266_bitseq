@@ -86,13 +86,16 @@ dial_isIdle(void) {
  */
 void ICACHE_FLASH_ATTR
 dial_init(os_timer_func_t *resultCb) {
+  // I'm cutting it close with the timing limits because
+  // the dial sends two 24 bit blocks and we are only interested in the last one
+  // The blocks are separated by 85 us or so.
 
   // Acquire 24 bits
-  // at most 18 us between clock pulses
-  // at least 70 us between blocks
-  // at most 100 us between blocks
+  // at most 15 us between clock pulses
+  // at least 80 us between blocks
+  // at most 90 us between blocks
   // falling edge
-  GPIOI_init(24, 18, 70, 100, false, resultCb);
+  GPIOI_init(24, 15, 80, 90, false, resultCb);
   userCallback = resultCb;
 }
 
