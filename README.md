@@ -20,7 +20,7 @@ Then you will then have to compile the code and flash your chip.
 The caliper uses a very small amount of power (less than 5mA @ 1.5V) so it is possible to generate regulated voltage with just the voltage drop over a few leds or diodes. I'm no EE but it seems to work just fine.
 If you connect your caliper this way you have to find a diode/led with a suitable (combined) voltage drop. Anything between 1.5V to 1.3V seems to work. Test the voltage *before* you hook up your caliper.
 
-Added bonus: this circuit does not need any transistors to convert the logic signals to 3.3V. When the caliper sends out "0" the esp8266 will receive 0.9V -> logic "0". And when caliper sends "1" the esp8266 will receive 2.4V -> logic "1".
+~~Added bonus: this circuit does not need any transistors to convert the logic signals to 3.3V. When the caliper sends out "0" the esp8266 will receive 0.9V -> logic "0". And when caliper sends "1" the esp8266 will receive 2.4V -> logic "1".~~ This works, most of the time. But not reliably.
 
 Be aware that there will be no common ground between esp8266 and the caliper - do *not* connect all the 'black cables' as per usual in DIY projects :)
 
