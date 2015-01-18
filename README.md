@@ -7,9 +7,6 @@ Connect your ESP8266 with a cheap caliper, a digital dial indicator or a MAX6675
 
 ![Caliper](/doc/caliper.jpg)
 
-
-So far it's just a (barely) working bit banging prototype.
-
 The code is based on https://github.com/tuanpmt/esp_mqtt.git (MQTT code), https://github.com/fasmide/esp_dht22.git and Arduino code found at https://sites.google.com/site/marthalprojects/home/arduino/arduino-reads-digital-caliper.
 [Justin R.](https://hackaday.io/hacker/1910-justin-r) wrote a really useful [blog](https://hackaday.io/project/511-digital-dial-indicator-cnc-surface-probe/log/814-the-digital-dial-indicator-and-how-to-read-from-it) about the digital dial that helped me a lot (no code though).
 
