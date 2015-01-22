@@ -6,7 +6,7 @@
  * this library is public domain. enjoy!
  * www.ladyada.net/learn/sensors/thermocouple
  */
-#include "driver/max6675.h"
+#include "max6675driver/max6675.h"
 #include "gpio.h"
 #include "ets_sys.h"
 #include "osapi.h"
