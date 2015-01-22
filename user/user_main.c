@@ -37,9 +37,9 @@
 #include "mqtt/config.h"
 #include "mqtt/debug.h"
 
-#include "driver/caliper.h"
-#include "driver/dial.h"
-#include "driver/max6675.h"
+#include "bitseqdriver/caliper.h"
+#include "bitseqdriver/dial.h"
+#include "max6675driver/max6675.h"
 
 #define MAC2STR(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
 #define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
