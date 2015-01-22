@@ -24,7 +24,7 @@ ESPPORT		?= /dev/ttyUSB0
 TARGET		= app
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= mqtt bitseqdriver max6675driver driver user
+MODULES		= mqtt driver bitseqdriver user
 EXTRA_INCDIR    = include $(SDK_BASE)/../include
 
 # libraries used in this project, mainly provided by the SDK
@@ -128,7 +128,9 @@ firmware:
 	$(Q) mkdir -p $@
 
 flash: firmware/0x00000.bin firmware/0x40000.bin
+	#$(PYTHON)  ~/Develop/workspace-arduino/ProMiniBootloader/upload.py /dev/ttyACM0 9600 bypass reset 
 	$(PYTHON) $(ESPTOOL) -p $(ESPPORT) write_flash 0x00000 firmware/0x00000.bin 0x3C000 $(BLANKER) 0x40000 firmware/0x40000.bin 
+	#$(PYTHON) ~/Develop/workspace-arduino/ProMiniBootloader/upload.py /dev/ttyACM0 9600 normal
 
 test: flash
 	screen $(ESPPORT) 115200

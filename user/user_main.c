@@ -39,33 +39,23 @@
 
 #include "bitseqdriver/caliper.h"
 #include "bitseqdriver/dial.h"
-#include "max6675driver/max6675.h"
 
 #define MAC2STR(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
 #define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
 
 #ifdef USE_DIAL_SENSOR
 #undef USE_CALIPER_SENSOR
-#undef USE_MAX6675_SENSOR
 #undef USE_WATT_SENSOR
 #endif
 
 #ifdef USE_CALIPER_SENSOR
 #undef USE_DIAL_SENSOR
-#undef USE_MAX6675_SENSOR
-#undef USE_WATT_SENSOR
-#endif
-
-#ifdef USE_MAX6675_SENSOR
-#undef USE_DIAL_SENSOR
-#undef USE_CALIPER_SENSOR
 #undef USE_WATT_SENSOR
 #endif
 
 #ifdef USE_WATT_SENSOR
 #undef USE_DIAL_SENSOR
 #undef USE_CALIPER_SENSOR
-#undef USE_MAX6675_SENSOR
 #endif
 
 MQTT_Client mqttClient;
@@ -83,7 +73,6 @@ void mqttPublishedCb(uint32_t *args);
 void mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len, const char *data, uint32_t data_len);
 void mqttDisconnectedCb(uint32_t *args);
 
-void performMaxSensorSamplingTimer(void);
 void initiateCaliperSensorSamplingTimer(void);
 void initiateDialSensorSamplingTimer(void);
 void dialSensorDataCb(void);
@@ -227,24 +216,6 @@ wattSensorDataCb(void) {
   }
 }
 
-void ICACHE_FLASH_ATTR
-performMaxSensorSamplingTimer(void) {
-  // This does not initiate a callback. The sampling is synchronous
-  int nextPeriod = SENSOR_SAMPLE_PERIOD;
-  if (broker_established) {
-    int bytesWritten = 0;
-    if (max6675_readTempAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten, true)) {
-      INFO("MQTT performMaxSensorSamplingTimer: received %s\r\n", sendbuffer);
-      MQTT_Publish( &mqttClient, clientid, sendbuffer, bytesWritten, 0, false);
-    } else {
-      nextPeriod = SENSOR_SAMPLE_PERIOD/2;
-    }
-  }
-  os_timer_disarm(&sensor_timer);
-  os_timer_arm(&sensor_timer, nextPeriod, 0);
-}
-
-
 void user_init(void)
 {
   // Make os_printf working again. Baud:115200,n,8,1
@@ -260,9 +231,6 @@ void user_init(void)
 #endif
 #ifdef USE_CALIPER_SENSOR
 	caliper_init(false, (os_timer_func_t*) caliperSensorDataCb);
-#endif
-#ifdef USE_MAX6675_SENSOR
-	max6675_init();
 #endif
 #ifdef USE_WATT_SENSOR
   watt_init((os_timer_func_t*) wattSensorDataCb);
@@ -285,9 +253,6 @@ void user_init(void)
 #endif
 #ifdef USE_CALIPER_SENSOR
   os_timer_setfn(&sensor_timer, (os_timer_func_t*) initiateCaliperSensorSamplingTimer, NULL);
-#endif
-#ifdef USE_MAX6675_SENSOR
-  os_timer_setfn(&sensor_timer, (os_timer_func_t*) performMaxSensorSamplingTimer, NULL);
 #endif
 #ifdef USE_WATT_SENSOR
   os_timer_setfn(&sensor_timer, (os_timer_func_t*) initiateWattSensorSamplingTimer, NULL);
