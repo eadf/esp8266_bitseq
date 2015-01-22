@@ -4,12 +4,11 @@
  *  Created on: Jan 2, 2015
  *      Author: ead fritz
  */
-#include "driver/watt.h"
+#include "bitseqdriver/watt.h"
 #include "eagle_soc.h" // gpio.h requires this, why can't it include it itself?
 #include "gpio.h"
 #include "osapi.h"
-#include "driver/dro_utils.h"
-#include "driver/gpio_intr.h"
+#include "bitseqdriver/gpio_intr.h"
 
 static os_timer_func_t *userCallback = NULL;
 
@@ -52,7 +51,7 @@ watt_readAsString(char *buf, int bufLen, int *bytesWritten) {
   float sample = 0.0;
   bool rv = watt_read(&sample);
   if(rv){
-    *bytesWritten = dro_utils_float_2_string(10000.0f*sample, 10000, buf, bufLen);
+    *bytesWritten = GPIOI_float_2_string(10000.0f*sample, 10000, buf, bufLen);
   } else {
     *bytesWritten = 0;
     buf[0] = '\0';

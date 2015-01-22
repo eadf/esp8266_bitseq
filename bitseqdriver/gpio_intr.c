@@ -8,7 +8,7 @@
  *      Author: Ead Fritz
  */
 
-#include "driver/gpio_intr.h"
+#include "bitseqdriver/gpio_intr.h"
 #include "osapi.h"
 #include "ets_sys.h"
 #include "gpio.h"
@@ -73,6 +73,46 @@ GPIOI_clearResults(void){
   //results.statusBits &= ~(GPIOI_RESULT_IS_READY|GPIOI_INTERRUPT_WHILE_NOT_RUNNING|
   //                        GPIOI_INTERRUPT_WHILE_HAVE_RESULT|GPIOI_NOT_ENOUGH_SILENCE|
   //                        GPIOI_TOO_MUCH_SILENCE);
+}
+
+// quick and dirty implementation of sprintf with %f
+int ICACHE_FLASH_ATTR
+GPIOI_float_2_string(float sample, int divisor, char *buf, int bufLen) {
+  char localBuffer[256];
+
+  char *sign;
+  if (sample>=0){
+    sign = "";
+  } else {
+    sign = "-";
+    sample = -sample;
+  }
+
+  int h = (int)(sample / divisor);
+  int r = (int)(sample - h*divisor);
+  int size = 0;
+
+  switch (divisor){
+    case 1: size = os_sprintf(localBuffer, "%s%d",sign,h);
+      break;
+    case 10: size = os_sprintf(localBuffer, "%s%d.%01d",sign,h, r);
+      break;
+    case 100: size = os_sprintf(localBuffer, "%s%d.%02d",sign,h, r);
+      break;
+    case 1000: size = os_sprintf(localBuffer, "%s%d.%03d",sign,h, r);
+      break;
+    case 10000: size = os_sprintf(localBuffer, "%s%d.%04d",sign,h, r);
+      break;
+    case 100000: size = os_sprintf(localBuffer, "%s%d.%05d",sign,h, r);
+      break;
+    default:
+      os_printf("dro_utils_float_2_string: could not recognize divisor: %d\r\n", divisor);
+     return 0;
+  }
+  int l = size>bufLen?bufLen:size;
+  strncpy(buf,localBuffer,l);
+  buf[l] = 0;
+  return l;
 }
 
 void ICACHE_FLASH_ATTR

@@ -11,7 +11,6 @@
 #include "ets_sys.h"
 #include "osapi.h"
 #include "math.h"
-#include "driver/dro_utils.h"
 
 static const int ICS_PIN=2;   // !Chip Select: This is GIOP2, connect a 10K pull down resistor to GND to avoid problems with the bootloader starting
 static const int CLOCK_PIN=0; // Clock       : This is GIOP0, connect a 10K pull up resistor to Vcc to avoid problems with the bootloader starting
@@ -128,10 +127,50 @@ max6675_readTempAsString(char *buf, int bufLen, int *bytesWritten, bool celcius)
   float sample = 0.0;
   bool rv = max6675_readTemp(&sample, celcius);
   if(rv){
-    *bytesWritten = dro_utils_float_2_string(100.0*sample, 100, buf, bufLen);
+    *bytesWritten = max6675_float_2_string(100.0*sample, 100, buf, bufLen);
   } else {
     *bytesWritten = 0;
     buf[0] = 0;
   }
   return rv;
+}
+
+// quick and dirty implementation of sprintf with %f
+int ICACHE_FLASH_ATTR
+max6675_float_2_string(float sample, int divisor, char *buf, int bufLen) {
+  char localBuffer[256];
+
+  char *sign;
+  if (sample>=0){
+    sign = "";
+  } else {
+    sign = "-";
+    sample = -sample;
+  }
+
+  int h = (int)(sample / divisor);
+  int r = (int)(sample - h*divisor);
+  int size = 0;
+
+  switch (divisor){
+    case 1: size = os_sprintf(localBuffer, "%s%d",sign,h);
+      break;
+    case 10: size = os_sprintf(localBuffer, "%s%d.%01d",sign,h, r);
+      break;
+    case 100: size = os_sprintf(localBuffer, "%s%d.%02d",sign,h, r);
+      break;
+    case 1000: size = os_sprintf(localBuffer, "%s%d.%03d",sign,h, r);
+      break;
+    case 10000: size = os_sprintf(localBuffer, "%s%d.%04d",sign,h, r);
+      break;
+    case 100000: size = os_sprintf(localBuffer, "%s%d.%05d",sign,h, r);
+      break;
+    default:
+      os_printf("dro_utils_float_2_string: could not recognize divisor: %d\r\n", divisor);
+     return 0;
+  }
+  int l = size>bufLen?bufLen:size;
+  strncpy(buf,localBuffer,l);
+  buf[l] = 0;
+  return l;
 }

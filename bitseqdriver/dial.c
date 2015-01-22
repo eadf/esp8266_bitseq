@@ -4,12 +4,11 @@
  *  Created on: Jan 2, 2015
  *      Author: ead fritz
  */
-#include "driver/dial.h"
+#include "bitseqdriver/dial.h"
 #include "eagle_soc.h" // gpio.h requires this, why can't it include it itself?
 #include "gpio.h"
 #include "osapi.h"
-#include "driver/dro_utils.h"
-#include "driver/gpio_intr.h"
+#include "bitseqdriver/gpio_intr.h"
 
 static const float CONVERT_TO_MM = 1.2397707131274277f;
 static os_timer_func_t *userCallback = NULL;
@@ -65,7 +64,7 @@ dial_readAsString(char *buf, int bufLen, int *bytesWritten) {
   float sample = 0.0;
   bool rv = dial_read(&sample);
   if(rv){
-    *bytesWritten = dro_utils_float_2_string(10000.0f*sample, 10000, buf, bufLen);
+    *bytesWritten = GPIOI_float_2_string(10000.0f*sample, 10000, buf, bufLen);
     // the unit is always sent as mm from the dial, regardless of the inch/mm button
     if(bufLen > *bytesWritten + 4) {
       buf[*bytesWritten+0] = 'm';

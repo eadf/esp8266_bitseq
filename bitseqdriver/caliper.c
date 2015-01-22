@@ -4,11 +4,11 @@
  *  Created on: Jan 2, 2015
  *      Author: user
  */
-#include "driver/caliper.h"
+#include "bitseqdriver/caliper.h"
 #include "eagle_soc.h" // gpio.h requires this, why can't it include it itself?
 #include "gpio.h"
 #include "osapi.h"
-#include "driver/dro_utils.h"
+#include "bitseqdriver/gpio_intr.h"
 
 static const float CONVERT_TO_MM = 0.01f;
 static const float CONVERT_TO_INCH = 0.0005f;
@@ -80,9 +80,9 @@ caliper_readAsString(char *buf, int bufLen, int *bytesWritten){
   bool rv = caliper_read(&sample, &isMM);
   if(rv){
     if(isMM){
-      *bytesWritten = dro_utils_float_2_string(100.0f*sample, 100, buf, bufLen);
+      *bytesWritten = GPIOI_float_2_string(100.0f*sample, 100, buf, bufLen);
     } else {
-      *bytesWritten = dro_utils_float_2_string(10000.0f*sample, 10000, buf, bufLen);
+      *bytesWritten = GPIOI_float_2_string(10000.0f*sample, 10000, buf, bufLen);
     }
     if(bufLen > *bytesWritten + 4) {
       if(isMM){

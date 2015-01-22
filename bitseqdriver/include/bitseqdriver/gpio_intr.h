@@ -52,6 +52,7 @@ void GPIOI_disableInterrupt(void);
  */
 volatile GPIOI_Result* GPIOI_getResult(void);
 
+int GPIOI_float_2_string(float sample, int divisor, char *buf, int bufLen);
 void GPIOI_printBinary8(uint8_t data);
 void GPIOI_printBinary16(uint16_t data);
 void GPIOI_printBinary32(uint32_t data);

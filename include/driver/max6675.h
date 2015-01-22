@@ -14,6 +14,7 @@
 void max6675_init(void);
 
 bool max6675_readTemp(float* sample, bool celcius);
+int max6675_float_2_string(float sample, int divisor, char *buf, int bufLen);
 
 /**
  * reads the temperature and fills the buf with the value as a string.
