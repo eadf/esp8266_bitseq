@@ -11,8 +11,9 @@
 #include "driver/dro_utils.h"
 #include "driver/gpio_intr.h"
 
-static const float CONVERT_TO_MM = -1.2397707131274277f;
+static const float CONVERT_TO_MM = 1.2397707131274277f;
 static os_timer_func_t *userCallback = NULL;
+static bool dial_negativeLogic = false;
 
 bool ICACHE_FLASH_ATTR
 dial_read(float *sample)
@@ -27,15 +28,18 @@ dial_read(float *sample)
     int32_t polishedResult;
 
     result = GPIOI_sliceBits(-2,-25,true);
+    if (dial_negativeLogic) {
+      result = ~result;
+    }
     polishedResult = result;
-    if (result & 1<<23 ) {
+    if (result & 1<<23) {
       // bit 23 indicates negative value, just set bit 24-31 as well
       polishedResult = (int32_t)(CONVERT_TO_MM*((int32_t)(result|0xff000000)));
     } else {
       polishedResult = (int32_t)(CONVERT_TO_MM*result);
     }
-    os_printf("GPIOI got result: ");
-    GPIOI_debugTrace(-2,-25);
+    //os_printf("GPIOI got result: ");
+    //GPIOI_debugTrace(-2,-25);
     *sample = 0.0001f*polishedResult;
     return true;
   } else {
@@ -80,11 +84,12 @@ dial_readAsString(char *buf, int bufLen, int *bytesWritten) {
  * Setup the hardware and initiate callbacks
  */
 void ICACHE_FLASH_ATTR
-dial_init(os_timer_func_t *resultCb) {
+dial_init(bool negativeLogic, os_timer_func_t *resultCb) {
+  dial_negativeLogic = negativeLogic;
   // Acquire 48 bits
   // at least 90 ms between blocks
-  // falling edge
-  GPIOI_init(48, 90000, true, resultCb);
+  // falling edge on non-inverting logic
+  GPIOI_init(48, 90000, dial_negativeLogic, resultCb);
   userCallback = resultCb;
 }
 

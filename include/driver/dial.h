@@ -15,6 +15,6 @@ bool dial_read(float *sample);
 bool dial_readAsString(char *sample, int bufLen, int *bytesWritten);
 //bool dial_isIdle(void);
 bool dial_startSampling(void);
-void dial_init(os_timer_func_t *resultCb);
+void dial_init(bool negativeLogic, os_timer_func_t *resultCb);
 
 #endif /* USER_dial_H_ */

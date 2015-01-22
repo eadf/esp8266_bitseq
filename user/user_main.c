@@ -256,10 +256,10 @@ void user_init(void)
 	CFG_Load();
 	gpio_init();
 #ifdef USE_DIAL_SENSOR
-	dial_init((os_timer_func_t*) dialSensorDataCb);
+	dial_init(true, (os_timer_func_t*) dialSensorDataCb);
 #endif
 #ifdef USE_CALIPER_SENSOR
-	caliper_init(true, (os_timer_func_t*) caliperSensorDataCb);
+	caliper_init(false, (os_timer_func_t*) caliperSensorDataCb);
 #endif
 #ifdef USE_MAX6675_SENSOR
 	max6675_init();
