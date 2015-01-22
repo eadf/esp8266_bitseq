@@ -46,17 +46,17 @@
 
 #ifdef USE_DIAL_SENSOR
 #undef USE_CALIPER_SENSOR
-#undef USE_MAX75_SENSOR
+#undef USE_MAX6675_SENSOR
 #undef USE_WATT_SENSOR
 #endif
 
 #ifdef USE_CALIPER_SENSOR
 #undef USE_DIAL_SENSOR
-#undef USE_MAX75_SENSOR
+#undef USE_MAX6675_SENSOR
 #undef USE_WATT_SENSOR
 #endif
 
-#ifdef USE_MAX75_SENSOR
+#ifdef USE_MAX6675_SENSOR
 #undef USE_DIAL_SENSOR
 #undef USE_CALIPER_SENSOR
 #undef USE_WATT_SENSOR
@@ -65,7 +65,7 @@
 #ifdef USE_WATT_SENSOR
 #undef USE_DIAL_SENSOR
 #undef USE_CALIPER_SENSOR
-#undef USE_MAX75_SENSOR
+#undef USE_MAX6675_SENSOR
 #endif
 
 MQTT_Client mqttClient;
@@ -259,9 +259,9 @@ void user_init(void)
 	dial_init((os_timer_func_t*) dialSensorDataCb);
 #endif
 #ifdef USE_CALIPER_SENSOR
-	caliper_init((os_timer_func_t*) caliperSensorDataCb);
+	caliper_init(true, (os_timer_func_t*) caliperSensorDataCb);
 #endif
-#ifdef USE_MAX75_SENSOR
+#ifdef USE_MAX6675_SENSOR
 	max6675_init();
 #endif
 #ifdef USE_WATT_SENSOR
@@ -286,7 +286,7 @@ void user_init(void)
 #ifdef USE_CALIPER_SENSOR
   os_timer_setfn(&sensor_timer, (os_timer_func_t*) initiateCaliperSensorSamplingTimer, NULL);
 #endif
-#ifdef USE_MAX75_SENSOR
+#ifdef USE_MAX6675_SENSOR
   os_timer_setfn(&sensor_timer, (os_timer_func_t*) performMaxSensorSamplingTimer, NULL);
 #endif
 #ifdef USE_WATT_SENSOR

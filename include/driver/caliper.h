@@ -14,6 +14,6 @@
 bool caliper_read(float *sample, bool *isMM);
 bool caliper_readAsString(char *sample, int bufLen, int *bytesWritten);
 bool caliper_startSampling(void);
-void caliper_init(os_timer_func_t *resultCb);
+void caliper_init(bool negativeLogic, os_timer_func_t *resultCb);
 
 #endif /* USER_CALIPER_H_ */
