@@ -2,7 +2,7 @@
  * watt.c
  *
  *  Created on: Jan 2, 2015
- *      Author: ead fritz
+ *      Author: eadf
  */
 #include "bitseqdriver/watt.h"
 #include "eagle_soc.h" // gpio.h requires this, why can't it include it itself?
@@ -21,16 +21,25 @@ watt_read(float *sample)
   }
 
   if ( GPIOI_hasResults() ) {
-    uint32_t result;
+    int32_t result;
+    //uint32_t tmp;
+    //uint32_t byte = 0;
 
-    result = GPIOI_sliceBits(-1,-32, false);
-    os_printf("GPIOI got result: ");
-    GPIOI_debugTrace(-1,-32);
+    result = GPIOI_sliceBits(-24, -1, true)<<1;
+    //os_printf("GPIOI got result: ");
+    //GPIOI_debugTrace(-112, -1);
+    //tmp = GPIOI_sliceBits(-24,-1, true);
+    //os_printf("\nword -1: %d\n", tmp);
+    //tmp = GPIOI_sliceBits(-56,-33, true);
+    //os_printf("word -2: %d\n", tmp);
+    //tmp = GPIOI_sliceBits(-88,-65, true);
+    //os_printf("word -3: %d\n", tmp);
+
     *sample = result;
     return true;
   } else {
     os_printf("GPIOI Still running, tmp result is: ");
-    GPIOI_debugTrace(-1,-32);
+    GPIOI_debugTrace(-112,-1);
   }
   return false;
 }
@@ -51,18 +60,18 @@ watt_readAsString(char *buf, int bufLen, int *bytesWritten) {
   float sample = 0.0;
   bool rv = watt_read(&sample);
   if(rv){
-    *bytesWritten = GPIOI_float_2_string(10000.0f*sample, 10000, buf, bufLen);
+    *bytesWritten = GPIOI_float_2_string(1.0f*sample, 1000, buf, bufLen);
+    if (bufLen > *bytesWritten+1) {
+      buf[*bytesWritten] = 'W';
+      buf[*bytesWritten+1] = 0;
+      *bytesWritten += 1;
+    }
   } else {
     *bytesWritten = 0;
     buf[0] = '\0';
   }
   return rv;
 }
-
-/*bool ICACHE_FLASH_ATTR
-watt_isIdle(void) {
-  return GPIOI_isIdle();
-}*/
 
 /**
  * Setup the hardware and initiate callbacks

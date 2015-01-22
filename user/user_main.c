@@ -212,6 +212,7 @@ wattSensorDataCb(void) {
     if (watt_readAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
       INFO("MQTT wattSensorDataCb: received %s\r\n", sendbuffer);
       MQTT_Publish( &mqttClient, clientid, sendbuffer, bytesWritten, 0, false);
+      MQTT_Publish( &mqttClient, "/939029e", sendbuffer, bytesWritten, 0, false);
     }
   }
 }
