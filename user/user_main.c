@@ -155,7 +155,7 @@ initiateCaliperSensorSamplingTimer(void) {
     if ( !caliper_startSampling() ) {
       nextPeriod = SENSOR_SAMPLE_PERIOD/2;
       os_printf("Caliper sensor is still running, tmp result is:\n");
-      GPIOI_debugTrace(0,23);
+      GPIOI_debugTrace(-1,-24);
     }
   }
   os_timer_disarm(&sensor_timer);
@@ -169,6 +169,7 @@ caliperSensorDataCb(void) {
     if (caliper_readAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
       INFO("MQTT caliperSensorDataCb: received %s\r\n", sendbuffer);
       MQTT_Publish( &mqttClient, clientid, sendbuffer, bytesWritten, 0, false);
+      MQTT_Publish( &mqttClient, "/939029e", sendbuffer, bytesWritten, 0, false);
     }
   }
 }
@@ -181,7 +182,7 @@ initiateDialSensorSamplingTimer(void) {
     if ( !dial_startSampling() ) {
       nextPeriod = SENSOR_SAMPLE_PERIOD/2;
       os_printf("Dial sensor is still running, tmp result is:\n");
-      GPIOI_debugTrace(0,23);
+      GPIOI_debugTrace(-1,-24);
     }
   }
   os_timer_disarm(&sensor_timer);
@@ -195,6 +196,7 @@ dialSensorDataCb(void) {
     if (dial_readAsString(sendbuffer, SENDBUFFERSIZE, &bytesWritten)) {
       INFO("MQTT dialSensorDataCb: received %s\r\n", sendbuffer);
       MQTT_Publish( &mqttClient, clientid, sendbuffer, bytesWritten, 0, false);
+      MQTT_Publish( &mqttClient, "/939029e", sendbuffer, bytesWritten, 0, false);
     }
   }
 }

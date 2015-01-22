@@ -24,14 +24,14 @@ watt_read(float *sample)
   if ( GPIOI_hasResults() ) {
     uint32_t result;
 
-    result = GPIOI_sliceBits(529,559);
+    result = GPIOI_sliceBits(-1,-32, false);
     os_printf("GPIOI got result: ");
-    GPIOI_debugTrace(529,559);
+    GPIOI_debugTrace(-1,-32);
     *sample = result;
     return true;
   } else {
     os_printf("GPIOI Still running, tmp result is: ");
-    GPIOI_debugTrace(529,559);
+    GPIOI_debugTrace(-1,-32);
   }
   return false;
 }
@@ -70,16 +70,12 @@ watt_isIdle(void) {
  */
 void ICACHE_FLASH_ATTR
 watt_init(os_timer_func_t *resultCb) {
-  // I'm cutting it close with the timing limits because
-  // the watt sends two 24 bit blocks and we are only interested in the last one
-  // The blocks are separated by 85 us or so.
 
-  // Acquire 560 bits
-  // at most 2000 us between clock pulses
+  // Acquire 64 bits
   // at least 40 ms between blocks
-  // at most 1s us between blocks
   // rising edge
-  GPIOI_init(560, 2000, 44000, 1000000, true, resultCb);
+
+  GPIOI_init(64, 40000, true, resultCb);
   userCallback = resultCb;
 }
 

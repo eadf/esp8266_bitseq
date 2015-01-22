@@ -1,7 +1,7 @@
 /*
  * gpio_intr.c
  *
- *  Generic bit sampler. Samples the value of GPIOI_DATA_PIN every falling or rising edge of GPIOI_CLK_PIN.
+ *  Generic bit GPIOI_sampler. GPIOI_samples the value of GPIOI_DATA_PIN every falling or rising edge of GPIOI_CLK_PIN.
  *
  *
  *  Created on: Jan 7, 2015
@@ -14,23 +14,35 @@
 #include "gpio.h"
 #include "mem.h"
 
-static const uint16_t GPIOI_CLK_PIN = 0;   // only pin 0 is implemented
-static const uint16_t GPIOI_DATA_PIN = 3;  // pin 2 or 3 is implemented
+#define GPIOI_CLK_PIN 0   // only pin 0 is implemented
+#define GPIOI_DATA_PIN 2  // pin 2 or 3 is implemented
 
+// GPIOI_BUFFER_MASK must equal the bits needed to address GPIOI_BUFFER_SIZE
+#define GPIOI_BUFFER_SIZE 512  //4096 bits
+#define GPIOI_BUFFER_MASK 0x0FFF
+
+static volatile os_timer_t callbackTimer;
 volatile static GPIOI_Setting settings;
 volatile static GPIOI_Result results;
 
-static volatile os_timer_t callbackTimer;
+static volatile uint32_t now;
+static volatile uint32_t period;
+static volatile uint32_t GPIOI_sample;
 
+// forward declarations
 void GPIOI_clearResults(void);
-void GPIOI_clearSampleData(void);
-uint32_t GPIOI_sliceBits(uint16_t start, uint16_t end);
-void GPIOI_inputSampleBit(uint32_t sample);
+uint8_t bitAt(uint16_t bitNumber);
+static void GPIOI_CLK_PIN_intr_handler(int8_t key);
+void GPIOI_printBinary(uint32_t data, int untilBit);
+void GPIOI_printBufferBinary(int16_t msb, int16_t lsb);
 
-void ICACHE_FLASH_ATTR
+#define GPIOI_micros (0x7FFFFFFF & system_get_time())
+
+void
 GPIOI_disableInterrupt(void) {
   //disable interrupt
   gpio_pin_intr_state_set(GPIO_ID_PIN(GPIOI_CLK_PIN), GPIO_PIN_INTR_DISABLE);
+  results.statusBits &= ~GPIOI_ISRUNNING;
 }
 
 void ICACHE_FLASH_ATTR
@@ -41,8 +53,8 @@ GPIOI_enableInterrupt(void) {
     GPIOI_clearResults();
     results.statusBits |= GPIOI_ISRUNNING;
     results.statusBits &= ~GPIOI_RESULT_IS_READY;
-    results.lastTimestamp = GPIOI_micros();
-
+    results.lastTimestamp = GPIOI_micros;
+    results.noOfRestarts = 0;
     //enable interrupt
     if (settings.onRising) {
       gpio_pin_intr_state_set(GPIO_ID_PIN(GPIOI_CLK_PIN), GPIO_PIN_INTR_POSEDGE);
@@ -52,181 +64,179 @@ GPIOI_enableInterrupt(void) {
   }
 }
 
-uint32_t ICACHE_FLASH_ATTR
-GPIOI_micros(void) {
-  return 0x7FFFFFFF & system_get_time();
-}
-
-void ICACHE_FLASH_ATTR
-GPIOI_clearSampleData(void) {
-  int byte = (settings.numberOfBits-1) >> 3; // byte indexes
-  for (; byte>=0; byte--) {
-    (results.data)[byte] = 0;
-  }
-}
-
 void ICACHE_FLASH_ATTR
 GPIOI_clearResults(void){
-  results.currentBit = 0;
-  results.fastestPeriod = 0xFFFFFFFF;
-  results.slowestPeriod = 0;
-  results.bitZeroPeriod = 0;
-  results.statusBits &= ~(GPIOI_RESULT_IS_READY|GPIOI_INTERRUPT_WHILE_NOT_RUNNING|
-                          GPIOI_INTERRUPT_WHILE_HAVE_RESULT|GPIOI_NOT_ENOUGH_SILENCE|
-                          GPIOI_TOO_MUCH_SILENCE|GPIOI_TOO_SLOW_CLOCK);
-  GPIOI_clearSampleData();
-}
-
-
-void ICACHE_FLASH_ATTR
-GPIOI_printByteAsBinary(uint8_t byte){
-  int16_t bit;
-  for (bit = 7; bit>=0; bit--) {
-    os_printf("%d", byte >> bit & 1);
-  }
+  results.currentBit = 0; // currentBit is truncated at GPIOI_BUFFER_SIZE
+  results.sampledBits = 0; // GPIOI_sampledBits is truncated at uint16_t
+  results.noOfRestarts = 0;
+  results.statusBits &= GPIOI_INITIATED; // only keep initiated flag
+  //results.statusBits &= ~(GPIOI_RESULT_IS_READY|GPIOI_INTERRUPT_WHILE_NOT_RUNNING|
+  //                        GPIOI_INTERRUPT_WHILE_HAVE_RESULT|GPIOI_NOT_ENOUGH_SILENCE|
+  //                        GPIOI_TOO_MUCH_SILENCE);
 }
 
 void ICACHE_FLASH_ATTR
-GPIOI_printBinary(void){
-  int16_t byte = (settings.numberOfBits-1) >> 3;
-  int16_t bit = (settings.numberOfBits-1) & 0x7;
-  if (bit<8) {
-    for (;bit>=0; bit--) {
-      os_printf("%d", (results.data)[byte] >> bit &  1);
-    }
-    byte--;
-    if (byte >=0) {
+GPIOI_printBinary(uint32_t data, int untilBit) {
+  int j;
+  for ( j=untilBit; j>=0;j--){
+    os_printf((data>>j)&1?"1":"0");
+    if (j!=untilBit && (j%8)==0) {
       os_printf(" ");
     }
   }
-  for (; byte >=0; byte--){
-    for (bit = 7; bit >=0; bit--){
-      os_printf("%d", (results.data)[byte] >> bit &  1);
+}
+
+void ICACHE_FLASH_ATTR
+GPIOI_printBinary8(uint8_t data) {
+  GPIOI_printBinary(data, 7);
+}
+
+void ICACHE_FLASH_ATTR
+GPIOI_printBinary16(uint16_t data){
+  GPIOI_printBinary(data, 15);
+}
+
+void ICACHE_FLASH_ATTR
+GPIOI_printBinary32(uint32_t data){
+  GPIOI_printBinary(data, 31);
+}
+
+/**
+ * returns the bit value indicated by index
+ */
+uint8_t ICACHE_FLASH_ATTR
+bitAt(uint16_t bitNumber) {
+  bitNumber &= GPIOI_BUFFER_MASK;
+  uint16_t bit  = bitNumber & 0x7;
+  uint16_t byte = bitNumber >> 3;
+  return (results.data[byte] >> (bit)) &1;
+}
+
+/**
+ * slice out bits from the bit stream and print.
+ * bit numbering are inclusive.
+ *
+ * If msb or lsb are negative they will count backward from
+ * the last GPIOI_sampled bit +1.
+ * i.e. -1 will indicate the last GPIOI_sampled bit.
+ */
+void ICACHE_FLASH_ATTR
+GPIOI_printBufferBinary(int16_t msb, int16_t lsb) {
+  if (msb<0) {
+    msb = (results.currentBit+msb) & GPIOI_BUFFER_MASK;
+  }
+  if (lsb<0) {
+    lsb = (results.currentBit+lsb) & GPIOI_BUFFER_MASK;
+  }
+  int bit = 0;
+  int i = 0;
+  if (msb < lsb){
+    for (bit=msb; bit<=lsb; bit++, i++){
+      os_printf(bitAt(bit)?"1":"0");
+      if ((i+1)%8==0) {
+        os_printf(" ");
+      }
     }
-    if (byte-1>=0){
-      os_printf(" ");
+  } else {
+    for (bit=msb; bit>=lsb; bit--, i++){
+      os_printf(bitAt(bit)?"1":"0");
+      if ((i+1)%8==0) {
+        os_printf(" ");
+      }
     }
   }
 }
 
 /**
- * slice out integer values from the bit stream
- * bit numbering begins with 0
+ * slice out integer values from the bit stream.
+ * bit numbering are inclusive.
+ *
+ * If msb or lsb are negative they will count backward from
+ * the last GPIOI_sampled bit +1.
+ * i.e. -1 will indicate the last GPIOI_sampled bit.
  */
 uint32_t ICACHE_FLASH_ATTR
-GPIOI_sliceBits(uint16_t start, uint16_t end){
-
-  if (7==end-start && start%8==0) {
-    // aligned int8_t slices
-    int index = start/8;
-    return (results.data)[index];
-  } else if (15==end-start && start%16==0) {
-    // aligned int16_t slices
-    int index = start/16;
-    uint32_t tmp = (results.data)[index+1];
-    tmp <<= 8;
-    tmp |= (results.data)[index];
-    return tmp;
-  } else if (31==end-start && start%32==0) {
-    // aligned int32_t slices
-    int index = start/32;
-    uint32_t tmp = (results.data)[index+3];
-    tmp <<= 8;
-    tmp |= (results.data)[index+2];
-    tmp <<= 8;
-    tmp |= (results.data)[index+1];
-    tmp <<= 8;
-    tmp |= (results.data)[index];
-    return tmp;
-  } else {
-    // non byte aligned slice - slow and inefficient
-    int16_t bit;
-    uint32_t tmp = 0;
-    for (bit=end; bit>=start; bit--){
-      tmp |= ((results.data)[bit>>3] >> (bit & 0x7)) & 1;
-      if ( bit-1 >= start){
-        tmp= tmp << 1;
-      }
-    }
-    return tmp;
+GPIOI_sliceBits(int16_t msb, int16_t lsb, bool duplicateMsb){
+  if (msb<0) {
+    msb = results.currentBit+msb;
   }
+  if (lsb<0) {
+    lsb = results.currentBit+lsb;
+  }
+  uint32_t tmp = 0;
+  int bit = 0;
+  if (msb < lsb){
+    if (duplicateMsb && bitAt(msb)) {
+      tmp = 0xFFFFFFFF;
+    }
+    for (bit=msb; bit<=lsb; bit++){
+      tmp = tmp << 1;
+      tmp |= bitAt(bit);
+    }
+  } else {
+    if (duplicateMsb && bitAt(msb)) {
+      tmp = 0xFFFFFFFF;
+    }
+    for (bit=msb; bit>=lsb; bit--){
+      tmp = tmp << 1;
+      tmp |= bitAt(bit);
+    }
+  }
+  return tmp;
 }
 
-void
-GPIOI_inputSampleBit(uint32_t sample) {
-
-#ifdef DRIVER_GPIO_INTR_ENABLE_HEARTBEAT
-  results.heartbeat +=1;
-#endif
-
-  if (results.statusBits & GPIOI_RESULT_IS_READY) {
-    results.statusBits |= GPIOI_INTERRUPT_WHILE_HAVE_RESULT;
-    return; // we are already done here
-  }
-  if ( !(results.statusBits & GPIOI_ISRUNNING) ) {
-    results.statusBits |= GPIOI_INTERRUPT_WHILE_NOT_RUNNING;
-    return; // we are already done here
-  }
-
-  uint32_t now = GPIOI_micros();
-  uint32_t period = now-results.lastTimestamp;
-
-  if (results.currentBit==0){
-    if (period < settings.minStartPeriod) {
-      // There were not enough silence before this bit, start over
-      results.statusBits |= GPIOI_NOT_ENOUGH_SILENCE;
-      results.lastTimestamp = now;
-      GPIOI_clearSampleData();
-      return;
-    }
-    if ( period > settings.maxStartPeriod){
-      // There were too much silence before this bit, start over
-      results.statusBits |= GPIOI_TOO_MUCH_SILENCE;
-      results.lastTimestamp = now;
-      GPIOI_clearSampleData();
-      return;
-    }
-    results.fastestPeriod = 0xFFFFFFFF;
-    results.slowestPeriod = 0;
-    results.bitZeroPeriod = period;
-  } else {
-    if (period > settings.maxClockPeriod){
-      results.statusBits |= GPIOI_TOO_SLOW_CLOCK;
-      // reset timing and start over
-      results.currentBit = 0;
-    } else {
-      if (period < results.fastestPeriod) {
-        results.fastestPeriod = period;
-      }
-      if (period > results.slowestPeriod){
-        results.slowestPeriod = period;
-      }
-    }
-  }
-  results.lastTimestamp = now;
-
-  int16_t byte = results.currentBit >> 3;
-  uint8_t bit = results.currentBit & 0x7;
-  (results.data)[byte] |= sample<<bit;
-
-  results.currentBit += 1;
-
-  if (results.currentBit >= settings.numberOfBits){
-    GPIOI_disableInterrupt();
-    results.statusBits |= GPIOI_RESULT_IS_READY;
-    results.statusBits &= ~GPIOI_ISRUNNING;
-    os_timer_arm(&callbackTimer, 10, 0);
-  }
+/**
+ * Store the bit value of 'GPIOI_sample' in 'results.data' at position 'results.currentBit'
+ * increments results.currentBit.
+ */
+#define GPIOI_storeBit {                    \
+  uint16_t aByte = results.currentBit >> 3; \
+  uint16_t aBit = results.currentBit & 0x7; \
+  if (GPIOI_sample) {                       \
+    results.data[aByte] |= 1<<aBit;         \
+  } else {                                  \
+    results.data[aByte] &= ~(1 << aBit);    \
+  }                                         \
+  results.currentBit = (results.currentBit+1) & GPIOI_BUFFER_MASK; \
 }
 
-LOCAL void
+/**
+ * This GPIOI_sampler will start sampling directly.
+ * When it detects the idle period it tests if enough bits have been acquired.
+ * It will continue/restart sampling if not enough bits have been stored.
+ */
+static void
 GPIOI_CLK_PIN_intr_handler(int8_t key) {
 
   uint32_t gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
   // clear interrupt status
   GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status & BIT(0));
+  now = GPIOI_micros;
+  GPIOI_sample = GPIO_INPUT_GET(GPIOI_DATA_PIN);
+  period = now-results.lastTimestamp;
 
-  GPIOI_inputSampleBit(GPIO_INPUT_GET(GPIOI_DATA_PIN));
+  if (GPIOI_RESULT_IS_READY & results.statusBits) {
+    return; // Should not happen
+  }
+
+  if (period > settings.minIdlePeriod){
+    if ( results.sampledBits >= settings.numberOfBits) {
+      // we're done
+      GPIOI_disableInterrupt();
+      results.statusBits |= GPIOI_RESULT_IS_READY;
+      os_timer_arm(&callbackTimer, 1, 0);
+    } else {
+      // start over
+      results.currentBit = 0;
+      results.noOfRestarts += 1;
+      GPIOI_storeBit
+      results.sampledBits += 1;
+    }
+  } else {
+    GPIOI_storeBit
+    results.sampledBits += 1;
+  }
+  results.lastTimestamp = now;
 }
 
 volatile GPIOI_Result volatile* ICACHE_FLASH_ATTR
@@ -259,54 +269,37 @@ GPIOI_hasResults(void) {
 }
 
 void ICACHE_FLASH_ATTR
-GPIOI_debugTrace(uint16_t startBit, uint16_t endBit) {
-  GPIOI_printBinary();
-
-#ifdef DRIVER_GPIO_INTR_ENABLE_HEARTBEAT
-  if (!results.statusBits & GPIOI_ISRUNNING ) {
-    os_printf("GPIOI: Interrupt handler was never started.");
-  }
-  os_printf(" %06X fast:%d slow:%d zw:%d hb:%d currB:%d sb:",
-        GPIOI_sliceBits(startBit, endBit),
-        results.fastestPeriod,
-        results.slowestPeriod,
-        results.bitZeroPeriod,
-        results.heartbeat,
-        results.currentBit);
-#else
-   os_printf(" %06X fast:%d slow:%d zw:%d currB:%d sb:",
-      GPIOI_sliceBits(startBit, endBit),
-      results.fastestPeriod,
-      results.slowestPeriod,
-      results.bitZeroPeriod,
-      results.currentBit );
-#endif
-   GPIOI_printByteAsBinary(results.statusBits);
-   os_printf("\n\r");
+GPIOI_debugTrace(int16_t msb, int16_t lsb) {
+  //os_printf("%02X%02X%02X%02X-",results.data[0],results.data[1],results.data[2],results.data[3]);
+  GPIOI_printBufferBinary(msb, lsb);
+  os_printf(" %06X restarts:%d sampledB:%d currB:%d sb:",
+    GPIOI_sliceBits(msb, lsb, false),
+    results.noOfRestarts, // restarts = noOfRestarts
+    results.sampledBits,  // sampledB = sampledBits
+    results.currentBit   // cb = current bit
+    );
+  GPIOI_printBinary16(results.statusBits);
+  os_printf("\n\r");
 }
 
 /**
  * numberOfBits: the number of bits we are going to sample
- * maxClockPeriod: the maximum length of a clock period
- * minStartPeriod: at least this many us between blocks
- * maxStartPeriod: at most this many us between blocks
+ * minIdlePeriod: at least this many us between blocks
+ * onRising : rising or falling edge trigger
  * resultCb : the callback to call when results are available
  */
 void ICACHE_FLASH_ATTR
-GPIOI_init(uint16_t numberOfBits, uint32_t maxClockPeriod, uint32_t minStartPeriod, uint32_t maxStartPeriod, bool onRising, os_timer_func_t *resultCb) {
+GPIOI_init(uint16_t numberOfBits, uint32_t minIdlePeriod, bool onRising, os_timer_func_t *resultCb) {
 
   //Setup callback timer
   os_timer_disarm(&callbackTimer);
   os_timer_setfn(&callbackTimer, resultCb, NULL);
 
-  settings.maxClockPeriod = maxClockPeriod;
-  settings.minStartPeriod = minStartPeriod;
-  settings.maxStartPeriod = maxStartPeriod;
+  settings.minIdlePeriod = minIdlePeriod;
   settings.numberOfBits = numberOfBits;
   settings.onRising = onRising;
 
-  //int size = (numberOfBits>>3) +2;
-  results.data = (uint8_t*)os_malloc(512); // 4096 bits
+  results.data = (uint8_t*)os_malloc(GPIOI_BUFFER_SIZE);
   results.statusBits = 0;
 
   GPIOI_clearResults();
@@ -354,12 +347,12 @@ GPIOI_init(uint16_t numberOfBits, uint32_t maxClockPeriod, uint32_t minStartPeri
     os_printf("GPIOI_init: Error GPIOI_DATA_PIN==%d is not implemented", GPIOI_DATA_PIN);
     return;
   }
+  os_printf("GPIOI_init: Initiated the GPIOI GPIOI_sampler with GPIOI_CLK_PIN=%d and GPIOI_DATA_PIN=%d.", GPIOI_CLK_PIN, GPIOI_DATA_PIN);
+  os_printf("GPIOI_init: Will sample %d bits on the %s edge", settings.numberOfBits, settings.onRising?"rising":"falling");
 
   //clear gpio status
   GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(0));
-
   GPIOI_disableInterrupt();
-
   ETS_GPIO_INTR_ENABLE();
 
   results.statusBits |= GPIOI_INITIATED;

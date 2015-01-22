@@ -11,7 +11,7 @@
 #include "driver/dro_utils.h"
 #include "driver/gpio_intr.h"
 
-static const float CONVERT_TO_MM = 1.2397707131274277f;
+static const float CONVERT_TO_MM = -1.2397707131274277f;
 static os_timer_func_t *userCallback = NULL;
 
 bool ICACHE_FLASH_ATTR
@@ -26,7 +26,7 @@ dial_read(float *sample)
     uint32_t result;
     int32_t polishedResult;
 
-    result = GPIOI_sliceBits(0,23);
+    result = GPIOI_sliceBits(-2,-25,true);
     polishedResult = result;
     if (result & 1<<23 ) {
       // bit 23 indicates negative value, just set bit 24-31 as well
@@ -35,12 +35,12 @@ dial_read(float *sample)
       polishedResult = (int32_t)(CONVERT_TO_MM*result);
     }
     os_printf("GPIOI got result: ");
-    GPIOI_debugTrace(0,23);
+    GPIOI_debugTrace(-2,-25);
     *sample = 0.0001f*polishedResult;
     return true;
   } else {
     os_printf("GPIOI Still running, tmp result is: ");
-    GPIOI_debugTrace(0,23);
+    GPIOI_debugTrace(-2,-25);
   }
   return false;
 }
@@ -76,26 +76,15 @@ dial_readAsString(char *buf, int bufLen, int *bytesWritten) {
   return rv;
 }
 
-/*bool ICACHE_FLASH_ATTR
-dial_isIdle(void) {
-  return GPIOI_isIdle();
-}*/
-
 /**
  * Setup the hardware and initiate callbacks
  */
 void ICACHE_FLASH_ATTR
 dial_init(os_timer_func_t *resultCb) {
-  // I'm cutting it close with the timing limits because
-  // the dial sends two 24 bit blocks and we are only interested in the last one
-  // The blocks are separated by 85 us or so.
-
-  // Acquire 24 bits
-  // at most 15 us between clock pulses
-  // at least 80 us between blocks
-  // at most 90 us between blocks
+  // Acquire 48 bits
+  // at least 90 ms between blocks
   // falling edge
-  GPIOI_init(24, 15, 80, 90, false, resultCb);
+  GPIOI_init(48, 90000, true, resultCb);
   userCallback = resultCb;
 }
 

@@ -36,7 +36,7 @@ caliper_read(float *sample, bool *isMM) {
   }
 
   if ( GPIOI_hasResults() ) {
-    int32_t result = GPIOI_sliceBits(0,23);
+    int32_t result = GPIOI_sliceBits(-1,-24);
 
     if(result & 1<<23){
       *isMM = false;
@@ -52,7 +52,7 @@ caliper_read(float *sample, bool *isMM) {
     }
 
     os_printf("Result is %d : ", result);
-    GPIOI_debugTrace(0,23);
+    GPIOI_debugTrace(-1,-24);
     if (*isMM){
       *sample = CONVERT_TO_MM * result;
     } else {
@@ -61,7 +61,7 @@ caliper_read(float *sample, bool *isMM) {
     return true;
   } else {
     os_printf("GPIOI Still running, tmp result is:\n");
-    GPIOI_debugTrace(0,23);
+    GPIOI_debugTrace(-1,-24);
     return false;
   }
 }
@@ -105,12 +105,10 @@ caliper_init(os_timer_func_t *resultCb) {
   // clock has a period of 333 us to 723 us
   // blocks are about 100ms apart
   //
-  // Acquire 24 bits
-  // at most 800 us between clock pulses
+  // Acquire 23 bits
   // at least 10 ms between blocks
-  // at most 5 sec between blocks
   // rising edge
 
-  GPIOI_init(24, 800, 10000, 5000000, true, resultCb);
+  GPIOI_init(24, 10000, true, resultCb);
   userCallback = resultCb;
 }
