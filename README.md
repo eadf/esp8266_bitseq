@@ -1,7 +1,7 @@
 esp8266_sensors
 ===========
 
-Connect your ESP8266 with a cheap caliper, a digital dial indicator or a MAX6675 Thermocouple-to-Digital Converter.
+Connect your ESP8266 with a cheap caliper or a digital dial indicator.
 
 ![Dial](/doc/dial.jpg)
 
