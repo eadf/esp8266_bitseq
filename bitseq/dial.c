@@ -22,11 +22,11 @@ dial_read(float *sample)
     return false;
   }
 
-  if ( GPIOI_hasResults() ) {
+  if ( bitseq_hasResults() ) {
     uint32_t result;
     int32_t polishedResult;
 
-    result = GPIOI_sliceBits(-2,-25,true);
+    result = bitseq_sliceBits(-2,-25,true);
     if (dial_negativeLogic) {
       result = ~result;
     }
@@ -38,21 +38,21 @@ dial_read(float *sample)
       polishedResult = (int32_t)(CONVERT_TO_MM*result);
     }
     //os_printf("GPIOI got result: ");
-    //GPIOI_debugTrace(-2,-25);
+    //bitseq_debugTrace(-2,-25);
     *sample = 0.0001f*polishedResult;
     return true;
   } else {
     os_printf("GPIOI Still running, tmp result is: ");
-    GPIOI_debugTrace(-2,-25);
+    bitseq_debugTrace(-2,-25);
   }
   return false;
 }
 
 bool ICACHE_FLASH_ATTR
 dial_startSampling(void) {
-  if (!GPIOI_isRunning()){
+  if (!bitseq_isRunning()){
     //os_printf("Setting new interrupt handler\n\r");
-    GPIOI_enableInterrupt();
+    bitseq_enableInterrupt();
     return true;
   } else {
     return false;
@@ -64,7 +64,7 @@ dial_readAsString(char *buf, int bufLen, int *bytesWritten) {
   float sample = 0.0;
   bool rv = dial_read(&sample);
   if(rv){
-    *bytesWritten = GPIOI_float_2_string(10000.0f*sample, 10000, buf, bufLen);
+    *bytesWritten = bitseq_float_2_string(10000.0f*sample, 10000, buf, bufLen);
     // the unit is always sent as mm from the dial, regardless of the inch/mm button
     if(bufLen > *bytesWritten + 4) {
       buf[*bytesWritten+0] = 'm';
@@ -88,7 +88,7 @@ dial_init(bool negativeLogic, os_timer_func_t *resultCb) {
   // Acquire 48 bits
   // at least 90 ms between blocks
   // falling edge on non-inverting logic
-  GPIOI_init(48, 90000, dial_negativeLogic, resultCb);
+  bitseq_init(48, 90000, dial_negativeLogic, resultCb);
   userCallback = resultCb;
 }
 

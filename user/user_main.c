@@ -27,7 +27,7 @@ void ICACHE_FLASH_ATTR
 initiateDialSensorSamplingTimer(void) {
   if ( !dial_startSampling() ) {
     os_printf("Dial sensor is still running, tmp result is:\n");
-    GPIOI_debugTrace(-1,-24);
+    bitseq_debugTrace(-1,-24);
   }
 }
 
@@ -47,7 +47,7 @@ void ICACHE_FLASH_ATTR
 initiateCaliperSensorSamplingTimer(void) {
   if ( !caliper_startSampling() ) {
     os_printf("Caliper sensor is still running, tmp result is:\n");
-    GPIOI_debugTrace(-1,-24);
+    bitseq_debugTrace(-1,-24);
   }
 }
 
@@ -67,7 +67,7 @@ void ICACHE_FLASH_ATTR
 initiateWattSensorSamplingTimer(void) {
   if ( !watt_startSampling() ) {
     os_printf("Watt sensor is still running, tmp result is:\n");
-    GPIOI_debugTrace(-1,-24);
+    bitseq_debugTrace(-1,-24);
   }
 }
 

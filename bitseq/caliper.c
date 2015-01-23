@@ -18,9 +18,9 @@ static bool caliper_negativeLogic = false;
 
 bool ICACHE_FLASH_ATTR
 caliper_startSampling(void) {
-  if (!GPIOI_isRunning()){
+  if (!bitseq__isRunning()){
     //os_printf("caliper_startSampling: Setting new interrupt handler\n\r");
-    GPIOI_enableInterrupt();
+    bitseq__enableInterrupt();
     return true;
   } else {
     return false;
@@ -36,13 +36,13 @@ caliper_read(float *sample, bool *isMM) {
     return false;
   }
 
-  if ( GPIOI_hasResults() ) {
-    int32_t result = GPIOI_sliceBits(-1,-24,false);
+  if ( bitseq__hasResults() ) {
+    int32_t result = bitseq__sliceBits(-1,-24,false);
     if (caliper_negativeLogic) {
       result =  (~result) & 0x00ffffff;
     }
     //os_printf("\n");
-    //GPIOI_printBinary32(result);
+    //bitseq__printBinary32(result);
     //os_printf("\n");
     // bit 23 indicates inches
     if(result & 1<<23){
@@ -61,13 +61,13 @@ caliper_read(float *sample, bool *isMM) {
     }
 
     os_printf("Result is %d : ", result);
-    GPIOI_debugTrace(-1,-24);
+    bitseq__debugTrace(-1,-24);
     *sample = *sample * result;
 
     return true;
   } else {
-    os_printf("GPIOI Still running, tmp result is:\n");
-    GPIOI_debugTrace(-1,-25);
+    os_printf("bitseq_ Still running, tmp result is:\n");
+    bitseq__debugTrace(-1,-25);
     return false;
   }
 }
@@ -80,9 +80,9 @@ caliper_readAsString(char *buf, int bufLen, int *bytesWritten){
   bool rv = caliper_read(&sample, &isMM);
   if(rv){
     if(isMM){
-      *bytesWritten = GPIOI_float_2_string(100.0f*sample, 100, buf, bufLen);
+      *bytesWritten = bitseq__float_2_string(100.0f*sample, 100, buf, bufLen);
     } else {
-      *bytesWritten = GPIOI_float_2_string(10000.0f*sample, 10000, buf, bufLen);
+      *bytesWritten = bitseq__float_2_string(10000.0f*sample, 10000, buf, bufLen);
     }
     if(bufLen > *bytesWritten + 4) {
       if(isMM){
@@ -112,6 +112,6 @@ caliper_init(bool negativeLogic, os_timer_func_t *resultCb) {
   // Acquire 24 bits
   // at least 10 ms between blocks
   // when a non-inverting amplifier is used we should trigger on rising edge
-  GPIOI_init(24, 10000, !negativeLogic, resultCb);
+  bitseq__init(24, 10000, !negativeLogic, resultCb);
   userCallback = resultCb;
 }

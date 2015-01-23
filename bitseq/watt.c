@@ -20,35 +20,35 @@ watt_read(float *sample)
     return false;
   }
 
-  if ( GPIOI_hasResults() ) {
+  if ( bitseq_hasResults() ) {
     int32_t result;
     //uint32_t tmp;
     //uint32_t byte = 0;
 
-    result = GPIOI_sliceBits(-24, -1, true)<<1;
+    result = bitseq_sliceBits(-24, -1, true)<<1;
     //os_printf("GPIOI got result: ");
-    //GPIOI_debugTrace(-112, -1);
-    //tmp = GPIOI_sliceBits(-24,-1, true);
+    //bitseq_debugTrace(-112, -1);
+    //tmp = bitseq_sliceBits(-24,-1, true);
     //os_printf("\nword -1: %d\n", tmp);
-    //tmp = GPIOI_sliceBits(-56,-33, true);
+    //tmp = bitseq_sliceBits(-56,-33, true);
     //os_printf("word -2: %d\n", tmp);
-    //tmp = GPIOI_sliceBits(-88,-65, true);
+    //tmp = bitseq_sliceBits(-88,-65, true);
     //os_printf("word -3: %d\n", tmp);
 
     *sample = result;
     return true;
   } else {
     os_printf("GPIOI Still running, tmp result is: ");
-    GPIOI_debugTrace(-112,-1);
+    bitseq_debugTrace(-112,-1);
   }
   return false;
 }
 
 bool ICACHE_FLASH_ATTR
 watt_startSampling(void) {
-  if (!GPIOI_isRunning()){
+  if (!bitseq_isRunning()){
     //os_printf("Setting new interrupt handler\n\r");
-    GPIOI_enableInterrupt();
+    bitseq_enableInterrupt();
     return true;
   } else {
     return false;
@@ -60,7 +60,7 @@ watt_readAsString(char *buf, int bufLen, int *bytesWritten) {
   float sample = 0.0;
   bool rv = watt_read(&sample);
   if(rv){
-    *bytesWritten = GPIOI_float_2_string(1.0f*sample, 1000, buf, bufLen);
+    *bytesWritten = bitseq_float_2_string(1.0f*sample, 1000, buf, bufLen);
     if (bufLen > *bytesWritten+1) {
       buf[*bytesWritten] = 'W';
       buf[*bytesWritten+1] = 0;
@@ -83,7 +83,7 @@ watt_init(os_timer_func_t *resultCb) {
   // at least 40 ms between blocks
   // rising edge
 
-  GPIOI_init(64, 40000, true, resultCb);
+  bitseq_init(64, 40000, true, resultCb);
   userCallback = resultCb;
 }
 
