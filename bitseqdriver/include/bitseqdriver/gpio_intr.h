@@ -2,7 +2,7 @@
  * gpio_intr.h
  *
  *  Created on: Jan 7, 2015
- *      Author: user
+ *      Author: eadf
  */
 
 #ifndef INCLUDE_DRIVER_GPIO_INTR_H_
