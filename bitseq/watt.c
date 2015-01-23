@@ -60,7 +60,7 @@ watt_readAsString(char *buf, int bufLen, int *bytesWritten) {
   float sample = 0.0;
   bool rv = watt_read(&sample);
   if(rv){
-    *bytesWritten = bitseq_float_2_string(1.0f*sample, 1000, buf, bufLen);
+    *bytesWritten = bitseq_float2string(1.0f*sample, 1000, buf, bufLen);
     if (bufLen > *bytesWritten+1) {
       buf[*bytesWritten] = 'W';
       buf[*bytesWritten+1] = 0;

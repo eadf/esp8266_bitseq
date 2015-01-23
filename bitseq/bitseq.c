@@ -8,7 +8,7 @@
  *      Author: Ead Fritz
  */
 
-#include "bitseq/gpio_intr.h"
+#include "bitseq/bitseq.h"
 #include "osapi.h"
 #include "ets_sys.h"
 #include "gpio.h"
@@ -77,7 +77,7 @@ bitseq_clearResults(void){
 
 // quick and dirty implementation of sprintf with %f
 int ICACHE_FLASH_ATTR
-bitseq_float_2_string(float sample, int divisor, char *buf, int bufLen) {
+bitseq_float2string(float sample, int divisor, char *buf, int bufLen) {
   char localBuffer[256];
 
   char *sign;

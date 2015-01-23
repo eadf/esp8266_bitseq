@@ -49,7 +49,7 @@ void bitseq_disableInterrupt(void);
  */
 volatile BitseqResult* bitseq_getResult(void);
 
-int bitseq_float_2_string(float sample, int divisor, char *buf, int bufLen);
+int bitseq_float2string(float sample, int divisor, char *buf, int bufLen);
 void bitseq_printBinary8(uint8_t data);
 void bitseq_printBinary16(uint16_t data);
 void bitseq_printBinary32(uint32_t data);

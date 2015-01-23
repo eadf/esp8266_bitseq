@@ -80,9 +80,9 @@ caliper_readAsString(char *buf, int bufLen, int *bytesWritten){
   bool rv = caliper_read(&sample, &isMM);
   if(rv){
     if(isMM){
-      *bytesWritten = bitseq__float_2_string(100.0f*sample, 100, buf, bufLen);
+      *bytesWritten = bitseq_float2string(100.0f*sample, 100, buf, bufLen);
     } else {
-      *bytesWritten = bitseq__float_2_string(10000.0f*sample, 10000, buf, bufLen);
+      *bytesWritten = bitseq_float2string(10000.0f*sample, 10000, buf, bufLen);
     }
     if(bufLen > *bytesWritten + 4) {
       if(isMM){

@@ -64,7 +64,7 @@ dial_readAsString(char *buf, int bufLen, int *bytesWritten) {
   float sample = 0.0;
   bool rv = dial_read(&sample);
   if(rv){
-    *bytesWritten = bitseq_float_2_string(10000.0f*sample, 10000, buf, bufLen);
+    *bytesWritten = bitseq_float2string(10000.0f*sample, 10000, buf, bufLen);
     // the unit is always sent as mm from the dial, regardless of the inch/mm button
     if(bufLen > *bytesWritten + 4) {
       buf[*bytesWritten+0] = 'm';
