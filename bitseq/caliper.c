@@ -4,11 +4,11 @@
  *  Created on: Jan 2, 2015
  *      Author: user
  */
-#include "bitseqdriver/caliper.h"
+#include "bitseq/caliper.h"
 #include "eagle_soc.h" // gpio.h requires this, why can't it include it itself?
 #include "gpio.h"
 #include "osapi.h"
-#include "bitseqdriver/gpio_intr.h"
+#include "bitseq/gpio_intr.h"
 
 static const float CONVERT_TO_MM = 0.01f;
 static const float CONVERT_TO_INCH = 0.0005f;

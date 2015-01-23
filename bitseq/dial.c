@@ -4,11 +4,11 @@
  *  Created on: Jan 2, 2015
  *      Author: ead fritz
  */
-#include "bitseqdriver/dial.h"
+#include "bitseq/dial.h"
 #include "eagle_soc.h" // gpio.h requires this, why can't it include it itself?
 #include "gpio.h"
 #include "osapi.h"
-#include "bitseqdriver/gpio_intr.h"
+#include "bitseq/gpio_intr.h"
 
 static const float CONVERT_TO_MM = 1.2397707131274277f;
 static os_timer_func_t *userCallback = NULL;

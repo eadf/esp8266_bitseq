@@ -8,7 +8,7 @@
  *      Author: Ead Fritz
  */
 
-#include "bitseqdriver/gpio_intr.h"
+#include "bitseq/gpio_intr.h"
 #include "osapi.h"
 #include "ets_sys.h"
 #include "gpio.h"

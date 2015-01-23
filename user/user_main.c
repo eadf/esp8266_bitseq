@@ -4,10 +4,10 @@
 #include "os_type.h"
 #include "user_interface.h"
 #include "driver/stdout.h"
-#include "bitseqdriver/dial.h"
-#include "bitseqdriver/caliper.h"
-#include "bitseqdriver/watt.h"
-#include "bitseqdriver/gpio_intr.h"
+#include "bitseq/dial.h"
+#include "bitseq/caliper.h"
+#include "bitseq/watt.h"
+#include "bitseq/gpio_intr.h"
 #include "user_config.h"
 
 #define user_procTaskPrio        0
