@@ -37,12 +37,12 @@ dial_read(float *sample)
     } else {
       polishedResult = (int32_t)(CONVERT_TO_MM*result);
     }
-    //os_printf("GPIOI got result: ");
+    //os_printf("BITSEQ got result: ");
     //bitseq_debugTrace(-2,-25);
     *sample = 0.0001f*polishedResult;
     return true;
   } else {
-    os_printf("GPIOI Still running, tmp result is: ");
+    os_printf("BITSEQ Still running, tmp result is: ");
     bitseq_debugTrace(-2,-25);
   }
   return false;

@@ -26,7 +26,7 @@ watt_read(float *sample)
     //uint32_t byte = 0;
 
     result = bitseq_sliceBits(-24, -1, true)<<1;
-    //os_printf("GPIOI got result: ");
+    //os_printf("BITSEQ got result: ");
     //bitseq_debugTrace(-112, -1);
     //tmp = bitseq_sliceBits(-24,-1, true);
     //os_printf("\nword -1: %d\n", tmp);
@@ -38,7 +38,7 @@ watt_read(float *sample)
     *sample = result;
     return true;
   } else {
-    os_printf("GPIOI Still running, tmp result is: ");
+    os_printf("BITSEQ sampler still running, tmp result is: ");
     bitseq_debugTrace(-112,-1);
   }
   return false;
@@ -79,7 +79,7 @@ watt_readAsString(char *buf, int bufLen, int *bytesWritten) {
 void ICACHE_FLASH_ATTR
 watt_init(os_timer_func_t *resultCb) {
 
-  // Acquire 64 bits
+  // Acquire 64 bits ( we only need 24 bits of the 4480 bits the device transmit every 900ms)
   // at least 40 ms between blocks
   // rising edge
 

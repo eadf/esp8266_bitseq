@@ -112,6 +112,6 @@ caliper_init(bool negativeLogic, os_timer_func_t *resultCb) {
   // Acquire 24 bits
   // at least 10 ms between blocks
   // when a non-inverting amplifier is used we should trigger on rising edge
-  bitseq__init(24, 10000, !negativeLogic, resultCb);
+  bitseq_init(24, 10000, !caliper_negativeLogic, resultCb);
   userCallback = resultCb;
 }

@@ -288,7 +288,7 @@ bool ICACHE_FLASH_ATTR
 bitseq_isRunning(void) {
   bool rv = (bitseq_results.statusBits & BITSEQ_INITIATED) &&
             (bitseq_results.statusBits & BITSEQ_ISRUNNING);
-  //os_printf("GPIOI: bitseq_isRunning");bitseq_printByteAsBinary(bitseq_results.statusBits);os_printf(" rv = %d\n", rv);
+  //os_printf("BITSET: bitseq_isRunning");bitseq_printByteAsBinary(bitseq_results.statusBits);os_printf(" rv = %d\n", rv);
   return rv;
 }
 
@@ -296,7 +296,7 @@ bool ICACHE_FLASH_ATTR
 bitseq_isIdle(void) {
   bool rv = (bitseq_results.statusBits & BITSEQ_INITIATED) &&
             !(bitseq_results.statusBits & BITSEQ_ISRUNNING);
-  //os_printf("GPIOI: bitseq_isRunning");bitseq_printByteAsBinary(bitseq_results.statusBits);os_printf(" rv = %d\n", rv);
+  //os_printf("BITSEQ: bitseq_isRunning");bitseq_printByteAsBinary(bitseq_results.statusBits);os_printf(" rv = %d\n", rv);
   return rv;
 }
 
@@ -304,7 +304,7 @@ bool ICACHE_FLASH_ATTR
 bitseq_hasResults(void) {
   bool rv = (bitseq_results.statusBits & BITSEQ_INITIATED) &&
             (bitseq_results.statusBits & BITSEQ_RESULT_IS_READY);
-  //os_printf("GPIOI: bitseq_isRunning");bitseq_printByteAsBinary(bitseq_results.statusBits);os_printf(" rv = %d\n", rv);
+  //os_printf("BITSEQ: bitseq_isRunning");bitseq_printByteAsBinary(bitseq_results.statusBits);os_printf(" rv = %d\n", rv);
   return rv;
 }
 
@@ -387,7 +387,7 @@ bitseq_init(uint16_t numberOfBits, uint32_t minIdlePeriod, bool onRising, os_tim
     os_printf("bitseq_init: Error BITSEQ_DATA_PIN==%d is not implemented", BITSEQ_DATA_PIN);
     return;
   }
-  os_printf("bitseq_init: Initiated the GPIOI sampler with BITSEQ_CLK_PIN=%d and BITSEQ_DATA_PIN=%d.", BITSEQ_CLK_PIN, BITSEQ_DATA_PIN);
+  os_printf("bitseq_init: Initiated the BITSEQ sampler with BITSEQ_CLK_PIN=%d and BITSEQ_DATA_PIN=%d.", BITSEQ_CLK_PIN, BITSEQ_DATA_PIN);
   os_printf("bitseq_init: Will sample %d bits on the %s edge", bitseq_settings.numberOfBits, bitseq_settings.onRising?"rising":"falling");
 
   //clear gpio status

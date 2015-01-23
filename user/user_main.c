@@ -17,8 +17,8 @@ static void user_procTask(os_event_t *events);
 
 static volatile os_timer_t sensor_timer;
 
-#define CHRBUFFERSIZE 128
-static char chrBuffer[CHRBUFFERSIZE];
+#define CHR_BUFFER_SIZE 128
+static char chrBuffer[CHR_BUFFER_SIZE];
 
 #ifdef USE_DIAL_SENSOR
 #undef USE_CALIPER_SENSOR
@@ -34,7 +34,7 @@ initiateDialSensorSamplingTimer(void) {
 void ICACHE_FLASH_ATTR
 dialSensorDataCb(void) {
   int bytesWritten = 0;
-  if (dial_readAsString(chrBuffer, CHRBUFFERSIZE, &bytesWritten)) {
+  if (dial_readAsString(chrBuffer, CHR_BUFFER_SIZE, &bytesWritten)) {
     os_printf("dialSensorDataCb: received %s\r\n", chrBuffer);
   }
 }
@@ -54,7 +54,7 @@ initiateCaliperSensorSamplingTimer(void) {
 void ICACHE_FLASH_ATTR
 caliperSensorDataCb(void) {
   int bytesWritten = 0;
-  if (caliper_readAsString(chrBuffer, CHRBUFFERSIZE, &bytesWritten)) {
+  if (caliper_readAsString(chrBuffer, CHR_BUFFER_SIZE, &bytesWritten)) {
     os_printf("caliperSensorDataCb: received %s\r\n", chrBuffer);
   }
 }
@@ -74,7 +74,7 @@ initiateWattSensorSamplingTimer(void) {
 void ICACHE_FLASH_ATTR
 wattSensorDataCb(void) {
   int bytesWritten = 0;
-  if (watt_readAsString(chrBuffer, CHRBUFFERSIZE, &bytesWritten)) {
+  if (watt_readAsString(chrBuffer, CHR_BUFFER_SIZE, &bytesWritten)) {
     os_printf("wattSensorDataCb: received %s\r\n", chrBuffer);
   }
 }
