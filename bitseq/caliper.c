@@ -18,9 +18,9 @@ static bool caliper_negativeLogic = false;
 
 bool ICACHE_FLASH_ATTR
 caliper_startSampling(void) {
-  if (!bitseq__isRunning()){
+  if (!bitseq_isRunning()){
     //os_printf("caliper_startSampling: Setting new interrupt handler\n\r");
-    bitseq__enableInterrupt();
+    bitseq_enableInterrupt();
     return true;
   } else {
     return false;
@@ -36,13 +36,13 @@ caliper_read(float *sample, bool *isMM) {
     return false;
   }
 
-  if ( bitseq__hasResults() ) {
-    int32_t result = bitseq__sliceBits(-1,-24,false);
+  if ( bitseq_hasResults() ) {
+    int32_t result = bitseq_sliceBits(-1,-24,false);
     if (caliper_negativeLogic) {
       result =  (~result) & 0x00ffffff;
     }
     //os_printf("\n");
-    //bitseq__printBinary32(result);
+    //bitseq_printBinary32(result);
     //os_printf("\n");
     // bit 23 indicates inches
     if(result & 1<<23){
@@ -61,13 +61,13 @@ caliper_read(float *sample, bool *isMM) {
     }
 
     os_printf("Result is %d : ", result);
-    bitseq__debugTrace(-1,-24);
+    bitseq_debugTrace(-1,-24);
     *sample = *sample * result;
 
     return true;
   } else {
     os_printf("bitseq_ Still running, tmp result is:\n");
-    bitseq__debugTrace(-1,-25);
+    bitseq_debugTrace(-1,-25);
     return false;
   }
 }
