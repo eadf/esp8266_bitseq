@@ -7,7 +7,7 @@
 #include "bitseq/dial.h"
 #include "bitseq/caliper.h"
 #include "bitseq/watt.h"
-#include "bitseq/gpio_intr.h"
+#include "bitseq/bitseq.h"
 #include "user_config.h"
 
 #define user_procTaskPrio        0

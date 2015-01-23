@@ -8,7 +8,7 @@
 #include "eagle_soc.h" // gpio.h requires this, why can't it include it itself?
 #include "gpio.h"
 #include "osapi.h"
-#include "bitseq/gpio_intr.h"
+#include "bitseq/bitseq.h"
 
 static os_timer_func_t *userCallback = NULL;
 
