@@ -151,7 +151,7 @@ user_init(void) {
 
   MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, sysCfg.security);
   MQTT_InitClient(&mqttClient, sysCfg.device_id, sysCfg.mqtt_user, sysCfg.mqtt_pass, sysCfg.mqtt_keepalive, 1);
-  MQTT_InitLWT(&mqttClient, "/lwt", "offline", 0, 0);
+  MQTT_InitLWT(&mqttClient, "/lcd3", " -offline-  ", 0, 0);
   MQTT_OnConnected(&mqttClient, mqttConnectedCb);
   MQTT_OnDisconnected(&mqttClient, mqttDisconnectedCb);
   MQTT_OnPublished(&mqttClient, mqttPublishedCb);
