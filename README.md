@@ -11,7 +11,7 @@ This is how the caliper sends data: one channel for the clock pulses and another
 
 These packages are usually separated by an idle period and then repeated. What this library does is to sample each databit at rising or falling clock pulse into a cyclic buffer. When it has aquired enough bits (configurable) and detected an idle period it will send your code a callback so that the data can be parsed and used.  
 
-I've added examples where i connect a cheap digital caliper, a digital dial and a power plug energy meter to a mqtt message broker.
+I've added examples where i connect a cheap digital caliper, a digital dial and a power plug energy meter to a [mqtt](http://mqtt.org) message broker.
 
 ## Digital Caliper
 
