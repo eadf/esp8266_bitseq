@@ -59,7 +59,7 @@ initiateCaliperSensorSamplingTimer(void) {
   if ( !caliper_startSampling() ) {
     nextPeriod = SENSOR_SAMPLE_PERIOD/2;
     os_printf("Caliper sensor is still running, tmp result is:\n");
-    bitseq_debugTrace(-1,-24);
+    bitseq_debugTrace(-24,-1);
   } else {
     //os_printf("Initated a new sample");
   }

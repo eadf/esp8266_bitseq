@@ -59,7 +59,8 @@ initiateWattSensorSamplingTimer(void) {
   if ( !watt_startSampling() ) {
     nextPeriod = SENSOR_SAMPLE_PERIOD/2;
     os_printf("Watt sensor is still running, tmp result is:\n");
-    bitseq_debugTrace(-1,-24);
+    bitseq_debugTrace(-24,-1);
+    MQTT_Publish( &mqttClient, "/lcd3", " -no data-  ", 12, 0, false);
   } else {
     //os_printf("Initated a new sample");
   }
@@ -100,7 +101,8 @@ mqttConnectedCb(uint32_t *args) {
   MQTT_Client* client = (MQTT_Client*) args;
   INFO("MQTT: Connected\r\n");
   MQTT_Publish( &mqttClient, "/lcd/clearscreen", "", 0, 0, false);
-  MQTT_Publish( &mqttClient, "/lcd2", "    Watt:   ", 12, 0, false);
+  MQTT_Publish( &mqttClient, "/lcd1", " Power plug ", 12, 0, false);
+  MQTT_Publish( &mqttClient, "/lcd2", "energy meter", 12, 0, false);
   // now when we got a mqtt broker connection - start sampling
   os_timer_disarm(&sensor_timer);
   os_timer_setfn(&sensor_timer, (os_timer_func_t*) initiateWattSensorSamplingTimer, NULL);
