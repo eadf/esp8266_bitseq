@@ -25,7 +25,7 @@ The main inspiration for this sampler was this [blog.](https://sites.google.com/
  
  [Justin R.](https://hackaday.io/hacker/1910-justin-r) wrote a really useful [blog](https://hackaday.io/project/511-digital-dial-indicator-cnc-surface-probe/log/814-the-digital-dial-indicator-and-how-to-read-from-it) about the digital dial that helped me a lot (no code though).
 
-## power plug energy meter
+## Power plug energy meter
 
 ![Dial](/doc/watt.png) 
 
@@ -33,3 +33,15 @@ The energy meter is described in [Kalle Löfgrens blog] (http://gizmosnack.blogs
 Just be aware that there is 50% chance that the logic wires (including GND) in that power meter will be directly connected to 230V.
 Don't even open the case if you don't know what you are doing.
 
+
+# Default pin configuration
+
+Device| ESP8266
+-------|------------------
+Clock | GPIO0
+Data | GPIO2
+
+
+# License 
+
+GNU GENERAL PUBLIC LICENSE Version 3
