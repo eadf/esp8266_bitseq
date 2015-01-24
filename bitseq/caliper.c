@@ -89,11 +89,11 @@ caliper_readAsString(char *buf, int bufLen, int *bytesWritten){
         buf[*bytesWritten+0] = 'm';
         buf[*bytesWritten+1] = 'm';
         buf[*bytesWritten+2] = 0;
-        *bytesWritten = *bytesWritten+3;
+        *bytesWritten = *bytesWritten+2;
       } else {
         buf[*bytesWritten+0] = '"';
         buf[*bytesWritten+1] = 0;
-        *bytesWritten = *bytesWritten+2;
+        *bytesWritten = *bytesWritten+1;
       }
     }
   } else {

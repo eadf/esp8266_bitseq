@@ -66,11 +66,11 @@ dial_readAsString(char *buf, int bufLen, int *bytesWritten) {
   if(rv){
     *bytesWritten = bitseq_float2string(10000.0f*sample, 10000, buf, bufLen);
     // the unit is always sent as mm from the dial, regardless of the inch/mm button
-    if(bufLen > *bytesWritten + 4) {
+    if(bufLen > *bytesWritten + 2) {
       buf[*bytesWritten+0] = 'm';
       buf[*bytesWritten+1] = 'm';
       buf[*bytesWritten+2] = 0;
-      *bytesWritten = *bytesWritten+3;
+      *bytesWritten = *bytesWritten+2;
     }
   } else {
     *bytesWritten = 0;
