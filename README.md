@@ -1,18 +1,22 @@
 #esp8266_bitseq
-===========
 
 General purpose synchronized bit sampler for esp8266.
 
 You can often find a hidden serial interface on your gadgets, it is used for in-factory testing and to sell you overpriced 'addons' with very limited functionality. 
 
 This library you can help you sample that data and do whatever you like with it.
-You will still have to figure out the data protocol and write some adapter code.
 
-I've added examples where i connect a cheap digital caliper, digital dial and a power plug energy meter to a mqtt message broker.
+![Caliper](/doc/caliper-serial.png)
+This is how the caliper sends data: 24 bits of clocked data. 
+
+These packages are separated by a idle period and then repeated. What this library does is to sample each databit at rising or falling clock pulse into a cyclic buffer. When it has aquired enough bits (configurable) and detected an idle period it will send your code a callback so that the data can be parsed and used.  
+
+I've added examples where i connect a cheap digital caliper, a digital dial and a power plug energy meter to a mqtt message broker.
 
 ## Digital Caliper
 
-![Caliper](/doc/caliper.jpg)
+![Caliper](/doc/caliper.jpg). 
+
 The main inspiration for this sampler was this [blog](https://sites.google.com/site/marthalprojects/home/arduino/arduino-reads-digital-caliper)
 
 ## Digital Dial
