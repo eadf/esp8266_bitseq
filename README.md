@@ -32,7 +32,7 @@ The main inspiration for this sampler was this [blog.](https://sites.google.com/
 The energy meter is described in [Kalle Löfgrens blog] (http://gizmosnack.blogspot.se/2014/10/power-plug-energy-meter-hack.html).
 Just be aware that there is 50% chance that the logic wires (including GND) in that power meter will be directly connected to 230V.
 Don't even open the case if you don't know what you are doing.
-The LCD in the image is a Nokia 5110 connected to another mqtt-enabled esp8266. Find the project [here.](https://github.com/eadf/esp_mqtt_lcd)
+The LCD in the image is a Nokia 5110 LCD connected to another [mqtt](https://github.com/tuanpmt/esp_mqtt)-enabled esp8266. Find the [lcd project here.](https://github.com/eadf/esp_mqtt_lcd)
 
 # Default pin configuration
 
