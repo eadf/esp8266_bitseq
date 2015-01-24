@@ -100,7 +100,7 @@ mqttConnectedCb(uint32_t *args) {
   MQTT_Client* client = (MQTT_Client*) args;
   INFO("MQTT: Connected\r\n");
   MQTT_Publish( &mqttClient, "/lcd/clearscreen", "", 0, 0, false);
-  MQTT_Publish( &mqttClient, "/lcd2", "  Caliper:", 0, 0, false);
+  MQTT_Publish( &mqttClient, "/lcd2", "  Caliper:  ", 12, 0, false);
   // now when we got a mqtt broker connection - start sampling
   os_timer_disarm(&sensor_timer);
   os_timer_setfn(&sensor_timer, (os_timer_func_t*) initiateCaliperSensorSamplingTimer, NULL);
