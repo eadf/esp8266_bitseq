@@ -27,7 +27,7 @@ The main inspiration for this sampler was this [blog.](https://sites.google.com/
 
 ## Power plug energy meter
 
-![Dial](/doc/watt.png) 
+![Dial](/doc/watt.png)
 
 The energy meter is described in [Kalle Löfgrens blog] (http://gizmosnack.blogspot.se/2014/10/power-plug-energy-meter-hack.html).
 Just be aware that there is 50% chance that the logic wires (including GND) in that power meter will be directly connected to 230V.
