@@ -14,6 +14,6 @@
 bool watt_read(float *sample);
 bool watt_readAsString(char *sample, int bufLen, int *bytesWritten);
 bool watt_startSampling(void);
-void watt_init(os_timer_func_t *resultCb);
+void watt_init(bool negativeLogic, os_timer_func_t *resultCb);
 
 #endif /* USER_watt_H_ */

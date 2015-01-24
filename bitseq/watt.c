@@ -10,23 +10,28 @@
 #include "osapi.h"
 #include "bitseq/bitseq.h"
 
-static os_timer_func_t *userCallback = NULL;
+static os_timer_func_t *watt_userCallback = NULL;
+static bool watt_negativeLogic = false;
 
 bool ICACHE_FLASH_ATTR
 watt_read(float *sample)
 {
-  if (userCallback==NULL) {
+  if (watt_userCallback==NULL) {
     os_printf("Error read watt: call watt_init first!\n\r");
     return false;
   }
 
   if ( bitseq_hasResults() ) {
-    int32_t result;
     //uint32_t tmp;
     //uint32_t byte = 0;
 
-    result = bitseq_sliceBits(-24, -1, true)<<1;
-    //os_printf("BITSEQ got result: ");
+    uint32_t raw  = bitseq_sliceBits(-24, -1, true)<<1;
+    if (watt_negativeLogic) {
+      raw = ~raw;
+    }
+    *sample = (int32_t) raw; // convert to int32_t then to float
+
+    //os_printf("BITSEQ got signedResult: ");
     //bitseq_debugTrace(-112, -1);
     //tmp = bitseq_sliceBits(-24,-1, true);
     //os_printf("\nword -1: %d\n", tmp);
@@ -35,10 +40,9 @@ watt_read(float *sample)
     //tmp = bitseq_sliceBits(-88,-65, true);
     //os_printf("word -3: %d\n", tmp);
 
-    *sample = result;
     return true;
   } else {
-    os_printf("BITSEQ sampler still running, tmp result is: ");
+    os_printf("BITSEQ sampler still running, tmp signedResult is: ");
     bitseq_debugTrace(-112,-1);
   }
   return false;
@@ -77,13 +81,14 @@ watt_readAsString(char *buf, int bufLen, int *bytesWritten) {
  * Setup the hardware and initiate callbacks
  */
 void ICACHE_FLASH_ATTR
-watt_init(os_timer_func_t *resultCb) {
+watt_init(bool negativeLogic, os_timer_func_t *resultCb) {
+  watt_negativeLogic = negativeLogic;
 
   // Acquire 64 bits ( we only need 24 bits of the 4480 bits the device transmit every 900ms)
   // at least 40 ms between blocks
-  // rising edge
+  // rising edge (on non-inverting logic)
 
-  bitseq_init(64, 40000, true, resultCb);
-  userCallback = resultCb;
+  bitseq_init(64, 40000, !watt_negativeLogic, resultCb);
+  watt_userCallback = resultCb;
 }
 
