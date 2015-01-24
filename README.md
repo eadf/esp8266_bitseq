@@ -1,7 +1,7 @@
 esp8266_sensors
 ===========
 
-Connect your ESP8266 with a cheap caliper or a digital dial indicator.
+Connect your ESP8266 with a cheap caliper, a digital dial indicator or a power plug energy meter.
 
 ![Dial](/doc/dial.jpg)
 
@@ -9,6 +9,11 @@ Connect your ESP8266 with a cheap caliper or a digital dial indicator.
 
 The code is based on https://github.com/tuanpmt/esp_mqtt.git (MQTT code), https://github.com/fasmide/esp_dht22.git and Arduino code found at https://sites.google.com/site/marthalprojects/home/arduino/arduino-reads-digital-caliper.
 [Justin R.](https://hackaday.io/hacker/1910-justin-r) wrote a really useful [blog](https://hackaday.io/project/511-digital-dial-indicator-cnc-surface-probe/log/814-the-digital-dial-indicator-and-how-to-read-from-it) about the digital dial that helped me a lot (no code though).
+
+The energy meter is described in [Kalle Löfgrens blog](http://gizmosnack.blogspot.se/2014/10/power-plug-energy-meter-hack.html).
+Just be aware that there is 50% chance that the logic wires (including GND) in that power meter will be directly connected to 230V.
+Don't even open the case if you don't know what you are doing.
+
 
 You have to edit the user_config.h to match your network and the details of your MQTT broker.
 Then you will then have to compile the code and flash your chip.
@@ -23,17 +28,16 @@ Be aware that there will be no common ground between esp8266 and the caliper - d
 
 ![Circuit](/doc/connector.jpg) ![Circuit](/doc/circuit.png) 
 
-Buf of course you can connect the caliper like [Martin did](https://sites.google.com/site/marthalprojects/home/arduino/arduino-reads-digital-caliper).
-But then you will have to invert the logic in code. 
-Look at the method caliperDigitalValue() in caliper.c
+You can connect the caliper like [Martin did](https://sites.google.com/site/marthalprojects/home/arduino/arduino-reads-digital-caliper).
+But then you will have to invert the logic in code (flip a boolean).
 
 ## Be aware
 
-The original Arduino code assumes an inverting "level shifter" while this esp code does not.
+~~The original Arduino code assumes an inverting "level shifter" while this esp code does not.~~ This is now configurable. 
 
 The digital dial serial interface might differ from model to model, the dial i got uses normally LOW clock and data bits. The dial Justin R describes in his blog seems to be inverted. 
 
-Also the digital dial outputs a simple signed 24bit integer on the serial interface. The conversion to mm/inch and the zero offset is entirely done in the internal LCD circuit of the dial.
+Also the digital dial outputs a simple signed 24bit integer on the serial interface. The conversion to mm/inch is done in the internal LCD circuit of the dial. The code is always converting to mm. If you want inches or any other [archaic](http://en.wikipedia.org/wiki/Cubit) units of measurement you will have to change the conversion constant yourself.
 
 The MQTT topic used is a "/" followed by the MAC address of the esp8266. You can open a serial console (Baud:115200,n,8,1) to the esp to look it up. 
 
