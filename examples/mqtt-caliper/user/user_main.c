@@ -44,13 +44,45 @@
 #define MAC2STR(a) (a)[0], (a)[1], (a)[2], (a)[3], (a)[4], (a)[5]
 #define MACSTR "%02x:%02x:%02x:%02x:%02x:%02x"
 
-#define SEND_BUFFER_SIZE 128
-static char sendbuffer[SEND_BUFFER_SIZE];
+#define SENSOR_BUFFER_SIZE 128
+static char sensorBuffer[SENSOR_BUFFER_SIZE];
 
 static MQTT_Client mqttClient;
 static volatile os_timer_t sensor_timer;
-static volatile bool broker_established = false;
 static char clientid[66];  // the MAC address
+
+
+void ICACHE_FLASH_ATTR
+initiateCaliperSensorSamplingTimer(void) {
+  // This will initiate a callback to caliperdialSensorDataCb when results are available
+  int nextPeriod = SENSOR_SAMPLE_PERIOD;
+  if ( !caliper_startSampling() ) {
+    nextPeriod = SENSOR_SAMPLE_PERIOD/2;
+    os_printf("Caliper sensor is still running, tmp result is:\n");
+    bitseq_debugTrace(-1,-24);
+  } else {
+    //os_printf("Initated a new sample");
+  }
+  os_timer_disarm(&sensor_timer);
+  os_timer_arm(&sensor_timer, nextPeriod, 0);
+}
+
+void ICACHE_FLASH_ATTR
+caliperSensorDataCb(void) {
+  int bytesWritten = 0;
+  if (caliper_readAsString(sensorBuffer, SENSOR_BUFFER_SIZE, &bytesWritten)) {
+    INFO("MQTT caliperSensorDataCb: received %s\r\n", sensorBuffer);
+    MQTT_Publish( &mqttClient, clientid, sensorBuffer, bytesWritten, 0, false);
+    // pad the text with ' ' so that it fills an entire line
+    for (;bytesWritten<12; bytesWritten++) {
+      sensorBuffer[bytesWritten] = ' ';
+      sensorBuffer[bytesWritten+1] = 0;
+    }
+    //os_printf("Sending >%s< to lcd. %d\n", sensorBuffer, bytesWritten);
+    MQTT_Publish( &mqttClient, "/lcd3", sensorBuffer, bytesWritten, 0, false);
+  }
+}
+
 
 void ICACHE_FLASH_ATTR
 wifiConnectCb(uint8_t status) {
@@ -67,15 +99,12 @@ void ICACHE_FLASH_ATTR
 mqttConnectedCb(uint32_t *args) {
   MQTT_Client* client = (MQTT_Client*) args;
   INFO("MQTT: Connected\r\n");
-  /*MQTT_Subscribe(client, "/mqtt/topic/0", 0);
-  MQTT_Subscribe(client, "/mqtt/topic/1", 1);
-  MQTT_Subscribe(client, "/mqtt/topic/2", 2);
-
-  MQTT_Publish(client, "/mqtt/topic/0", "hello0", 6, 0, 0);
-  MQTT_Publish(client, "/mqtt/topic/1", "hello1", 6, 1, 0);
-  MQTT_Publish(client, "/mqtt/topic/2", "hello2", 6, 2, 0);
- */
   MQTT_Publish( &mqttClient, "/lcd/clearscreen", "", 0, 0, false);
+  MQTT_Publish( &mqttClient, "/lcd2", "  Caliper:", 0, 0, false);
+  // now when we got a mqtt broker connection - start sampling
+  os_timer_disarm(&sensor_timer);
+  os_timer_setfn(&sensor_timer, (os_timer_func_t*) initiateCaliperSensorSamplingTimer, NULL);
+  os_timer_arm(&sensor_timer, SENSOR_SAMPLE_PERIOD, 0);
 }
 
 void ICACHE_FLASH_ATTR
@@ -108,39 +137,13 @@ mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len, const char *da
   os_free(dataBuf);
 }
 
-void ICACHE_FLASH_ATTR
-initiateCaliperSensorSamplingTimer(void) {
-  // This will initiate a callback to caliperdialSensorDataCb when results are available
-  int nextPeriod = SENSOR_SAMPLE_PERIOD;
-  if (broker_established) {
-    if ( !caliper_startSampling() ) {
-      nextPeriod = SENSOR_SAMPLE_PERIOD/2;
-      os_printf("Caliper sensor is still running, tmp result is:\n");
-      bitseq_debugTrace(-1,-24);
-    }
-  }
-  os_timer_disarm(&sensor_timer);
-  os_timer_arm(&sensor_timer, nextPeriod, 0);
-}
 
-void ICACHE_FLASH_ATTR
-caliperSensorDataCb(void) {
-  if (broker_established) {
-    int bytesWritten = 0;
-    if (caliper_readAsString(sendbuffer, SEND_BUFFER_SIZE, &bytesWritten)) {
-      INFO("MQTT caliperSensorDataCb: received %s\r\n", sendbuffer);
-      MQTT_Publish( &mqttClient, clientid, sendbuffer, bytesWritten, 0, false);
-      MQTT_Publish( &mqttClient, "/lcd3", sendbuffer, bytesWritten, 0, false);
-    }
-  }
-}
 
 void ICACHE_FLASH_ATTR
 user_init(void) {
   // Make os_printf working again. Baud:115200,n,8,1
   stdoutInit();
   os_delay_us(1000000);
-  os_timer_disarm(&sensor_timer);
 
   CFG_Load();
   gpio_init();
@@ -154,8 +157,6 @@ user_init(void) {
   MQTT_OnPublished(&mqttClient, mqttPublishedCb);
   MQTT_OnData(&mqttClient, mqttDataCb);
   WIFI_Connect(sysCfg.sta_ssid, sysCfg.sta_pwd, wifiConnectCb);
-
-  os_timer_setfn(&sensor_timer, (os_timer_func_t*) initiateCaliperSensorSamplingTimer, NULL);
 
   INFO("\r\nSystem started ...\r\n");
 }
