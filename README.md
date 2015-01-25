@@ -13,19 +13,19 @@ These packages are usually separated by an idle period and then repeated. What t
 
 I've added examples where i connect a cheap digital caliper, a digital dial and a power plug energy meter to a [mqtt](http://mqtt.org) message broker.
 
-## Digital Caliper
+## [Digital Caliper](https://github.com/eadf/esp8266_bitseq/wiki/caliper)
 
 ![Caliper](/doc/caliper.jpg). 
 
 The main inspiration for this sampler was this [blog.](https://sites.google.com/site/marthalprojects/home/arduino/arduino-reads-digital-caliper)
 
-## Digital Dial
+## [Digital Dial](https://github.com/eadf/esp8266_bitseq/wiki/dial)
 
 ![Dial](/doc/dial.jpg) 
  
  [Justin R.](https://hackaday.io/hacker/1910-justin-r) wrote a really useful [blog](https://hackaday.io/project/511-digital-dial-indicator-cnc-surface-probe/log/814-the-digital-dial-indicator-and-how-to-read-from-it) about the digital dial that helped me a lot (no code though).
 
-## Power plug energy meter
+## [Power plug energy meter](https://github.com/eadf/esp8266_bitseq/wiki/watt)
 
 ![Dial](/doc/watt.png)
 
