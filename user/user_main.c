@@ -10,10 +10,12 @@
 #include "bitseq/bitseq.h"
 #include "user_config.h"
 
+
 #define user_procTaskPrio        0
 #define user_procTaskQueueLen    1
 os_event_t user_procTaskQueue[user_procTaskQueueLen];
 static void user_procTask(os_event_t *events);
+static void setup(void);
 
 static volatile os_timer_t sensor_timer;
 
@@ -80,25 +82,12 @@ wattSensorDataCb(void) {
 }
 #endif
 
-//Do nothing function
+/**
+ * Setup program. When user_init runs the debug printouts will not always
+ * show on the serial console. So i run the inits in here, 2 seconds later.
+ */
 static void ICACHE_FLASH_ATTR
-user_procTask(os_event_t *events) {
-  os_delay_us(10);
-}
-
-//Init function
-void ICACHE_FLASH_ATTR
-user_init() {
-  // Make os_printf working again. Baud:115200,n,8,1
-  stdoutInit();
-
-  //Set station mode
-  wifi_set_opmode( NULL_MODE );
-
-  // Initialize the GPIO subsystem.
-  gpio_init();
-
-  //Disarm timer
+setup(void) {
   os_timer_disarm(&sensor_timer);
 
   //Setup timer
@@ -116,7 +105,35 @@ user_init() {
 #endif
 
   //Arm the timer
-  os_timer_arm(&sensor_timer, SENSOR_SAMPLE_PERIOD, 1);
+  os_timer_arm(&sensor_timer, SENSOR_SAMPLE_PERIOD, true);
+}
+
+//Do nothing function
+static void ICACHE_FLASH_ATTR
+user_procTask(os_event_t *events) {
+  os_delay_us(10);
+}
+
+//Init function
+void ICACHE_FLASH_ATTR
+user_init() {
+  // Initialize the GPIO subsystem.
+  gpio_init();
+
+  // Make uart0 work with just the TX pin. Baud:115200,n,8,1
+  // The RX pin is no free for GPIO use.
+  stdoutInit();
+
+  //Set station mode
+  //wifi_set_opmode(NULL_MODE); // NULL_MODE will crash the system under 0.9.5. It works with 0.9.4.
+
+  //if you flash your device with code that sets NULL_MODE it will remain in the system
+  //until you flash the device with code that actively sets opmode to something useful.
+
+  //Set the setup timer
+  os_timer_disarm(&sensor_timer);
+  os_timer_setfn(&sensor_timer, (os_timer_func_t *) setup, NULL);
+  os_timer_arm(&sensor_timer, SENSOR_SAMPLE_PERIOD, false);
 
   //Start os task
   system_os_task(user_procTask, user_procTaskPrio, user_procTaskQueue, user_procTaskQueueLen);
