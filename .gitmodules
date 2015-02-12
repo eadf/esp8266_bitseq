@@ -1,0 +1,3 @@
+[submodule "examples/esp_mqtt_subtree"]
+	path = examples/esp_mqtt_subtree
+	url = git@github.com:tuanpmt/esp_mqtt.git
