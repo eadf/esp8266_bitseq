@@ -1,5 +1,12 @@
+# Use Makefile as a soft link to your platform makefile (Makefile.linux/Makefile.mac)
+Makefile
+examples/mqtt-caliper/Makefile
+examples/mqtt-dial/Makefile
+examples/mqtt-watt/Makefile
+
 .settings
 .cproject
 .project
 build/
 firmware/
+.DS_Store
