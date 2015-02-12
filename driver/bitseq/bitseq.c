@@ -32,7 +32,7 @@ static volatile uint32_t bitseq_sample;
 // forward declarations
 void bitseq_clearResults(void);
 uint8_t bitseq_bitAt(uint16_t bitNumber);
-static void bitseq_CLK_PIN_intr_handler(int8_t key);
+static void bitseq_clk_intr_handler(int8_t key);
 void bitseq_printBinary(uint32_t data, int untilBit);
 void bitseq_printBufferBinary(int16_t msb, int16_t lsb);
 
@@ -246,7 +246,7 @@ bitseq_sliceBits(int16_t msb, int16_t lsb, bool duplicateMsb){
  * It will continue/restart sampling if not enough bits have been stored.
  */
 static void
-bitseq_CLK_PIN_intr_handler(int8_t key) {
+bitseq_clk_intr_handler(int8_t key) {
 
   uint32_t gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
   // clear interrupt status
@@ -353,7 +353,7 @@ bitseq_init(uint16_t numberOfBits, uint32_t minIdlePeriod, bool onRising, os_tim
     PIN_PULLUP_DIS(PERIPHS_IO_MUX_GPIO0_U);
     // disable output
     GPIO_DIS_OUTPUT(BITSEQ_CLK_PIN);
-    ETS_GPIO_INTR_ATTACH(bitseq_CLK_PIN_intr_handler,0);
+    ETS_GPIO_INTR_ATTACH(bitseq_clk_intr_handler,0);
     ETS_GPIO_INTR_DISABLE();
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);
     gpio_output_set(0, 0, 0, GPIO_ID_PIN(BITSEQ_CLK_PIN));
