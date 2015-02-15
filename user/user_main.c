@@ -121,7 +121,7 @@ user_init() {
   gpio_init();
 
   // Make uart0 work with just the TX pin. Baud:115200,n,8,1
-  // The RX pin is no free for GPIO use.
+  // The RX pin is now free for GPIO use.
   stdoutInit();
 
   //Set station mode
