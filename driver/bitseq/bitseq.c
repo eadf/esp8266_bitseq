@@ -387,8 +387,8 @@ bitseq_init(uint16_t numberOfBits, uint32_t minIdlePeriod, bool onRising, os_tim
     os_printf("bitseq_init: Error BITSEQ_DATA_PIN==%d is not implemented", BITSEQ_DATA_PIN);
     return;
   }
-  os_printf("bitseq_init: Initiated the BITSEQ sampler with BITSEQ_CLK_PIN=%d and BITSEQ_DATA_PIN=%d.", BITSEQ_CLK_PIN, BITSEQ_DATA_PIN);
-  os_printf("bitseq_init: Will sample %d bits on the %s edge", bitseq_settings.numberOfBits, bitseq_settings.onRising?"rising":"falling");
+  os_printf("bitseq_init: Initiated the BITSEQ sampler with BITSEQ_CLK_PIN=%d and BITSEQ_DATA_PIN=%d.\n", BITSEQ_CLK_PIN, BITSEQ_DATA_PIN);
+  os_printf("bitseq_init: Will sample %d bits on the %s edge.\n\n", bitseq_settings.numberOfBits, bitseq_settings.onRising?"rising":"falling");
 
   //clear gpio status
   GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(0));
