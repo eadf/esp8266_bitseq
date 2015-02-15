@@ -3,7 +3,7 @@
 #include "gpio.h"
 #include "os_type.h"
 #include "user_interface.h"
-#include "driver/stdout.h"
+#include "stdout/stdout.h"
 #include "bitseq/dial.h"
 #include "bitseq/caliper.h"
 #include "bitseq/watt.h"
@@ -122,7 +122,7 @@ user_init() {
 
   // Make uart0 work with just the TX pin. Baud:115200,n,8,1
   // The RX pin is now free for GPIO use.
-  stdoutInit();
+  stdout_init();
 
   //Set station mode
   //wifi_set_opmode(NULL_MODE); // NULL_MODE will crash the system under 0.9.5. It works with 0.9.4.
