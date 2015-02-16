@@ -22,7 +22,7 @@ ESPPORT		?= /dev/tty.usbserial
 TARGET		= app
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= $(BITSEQ_BASE)/driver/bitseq  $(MQTT_BASE)/mqtt $(BITSEQ_BASE)/driver user
+MODULES		= $(BITSEQ_BASE)/driver/bitseq  $(MQTT_BASE)/mqtt $(MQTT_BASE)/modules $(BITSEQ_BASE)/driver/stdout user
 EXTRA_INCDIR    = include .. $(BITSEQ_BASE)/include $(SDK_BASE)/../include
 
 # libraries used in this project, mainly provided by the SDK

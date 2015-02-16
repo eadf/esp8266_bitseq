@@ -28,7 +28,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 #include "ets_sys.h"
-#include "driver/stdout.h"
+#include "stdout/stdout.h"
 #include "osapi.h"
 #include "mqtt.h"
 #include "wifi.h"
@@ -142,7 +142,7 @@ mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len, const char *da
 void ICACHE_FLASH_ATTR
 user_init(void) {
   // Make os_printf working again. Baud:115200,n,8,1
-  stdoutInit();
+  stdout_init();
   os_delay_us(1000000);
 
   CFG_Load();
