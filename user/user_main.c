@@ -124,11 +124,9 @@ user_init() {
   // The RX pin is now free for GPIO use.
   stdout_init();
 
-  //Set station mode
-  //wifi_set_opmode(NULL_MODE); // NULL_MODE will crash the system under 0.9.5. It works with 0.9.4.
-
-  //if you flash your device with code that sets NULL_MODE it will remain in the system
-  //until you flash the device with code that actively sets opmode to something useful.
+  // turn off WiFi for this console only demo
+  wifi_station_set_auto_connect(false);
+  wifi_station_disconnect();
 
   //Set the setup timer
   os_timer_disarm(&sensor_timer);
