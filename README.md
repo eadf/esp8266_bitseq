@@ -68,6 +68,6 @@ source setenv.sh # This is only needed once per session
 make clean && make test
 ```
 
-You won't be needing esptool, the makefile only uses esptool.py (provided by esp-open-sdk)
+You won't be needing esptool, the makefile only uses esptool.py (provided by [esp_open_sdk](https://github.com/pfalcon/esp-open-sdk))
 
 I have tested this with sdk v0.9.5 and v0.9.4 (linux & mac)
