@@ -1,7 +1,3 @@
-examples/mqtt-caliper/Makefile
-examples/mqtt-dial/Makefile
-examples/mqtt-watt/Makefile
-
 .settings
 .cproject
 .project
