@@ -97,7 +97,7 @@ endif
 
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES         = driver/stdout driver/easygpio driver/bitseq user
+MODULES         = localinclude driver/stdout driver/easygpio driver/bitseq user
 EXTRA_INCDIR    = include $(SDK_BASE)/../include
 
 # libraries used in this project, mainly provided by the SDK
