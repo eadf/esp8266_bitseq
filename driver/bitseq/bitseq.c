@@ -16,6 +16,7 @@
 
 #define BITSEQ_CLK_PIN 0   // only pin 0 is implemented
 #define BITSEQ_DATA_PIN 2  // pin 2 or 3 is implemented
+static uint32 clock_pin_bit = BIT(BITSEQ_CLK_PIN);
 
 // BITSEQ_BUFFER_MASK must equal the bits needed to address BITSEQ_BUFFER_SIZE
 #define BITSEQ_BUFFER_SIZE 512  //4096 bits
@@ -249,34 +250,37 @@ static void
 bitseq_clk_intr_handler(int8_t key) {
 
   uint32_t gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
-  // clear interrupt status
-  GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status & BIT(0));
-  bitseq_now = bitseq_micros;
-  bitseq_sample = GPIO_INPUT_GET(BITSEQ_DATA_PIN);
-  bitseq_period = bitseq_now-bitseq_results.lastTimestamp;
+  if (gpio_status & clock_pin_bit) {
+    // This interrupt was intended for us - clear interrupt status
+    GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status & clock_pin_bit);
 
-  if (BITSEQ_RESULT_IS_READY & bitseq_results.statusBits) {
-    return; // Should not happen
-  }
+    bitseq_now = bitseq_micros;
+    bitseq_sample = GPIO_INPUT_GET(BITSEQ_DATA_PIN);
+    bitseq_period = bitseq_now-bitseq_results.lastTimestamp;
 
-  if (bitseq_period > bitseq_settings.minIdlePeriod){
-    if ( bitseq_results.sampledBits >= bitseq_settings.numberOfBits) {
-      // we're done
-      bitseq_disableInterrupt();
-      bitseq_results.statusBits |= BITSEQ_RESULT_IS_READY;
-      os_timer_arm(&bitseq_callbackTimer, 1, 0);
+    if (BITSEQ_RESULT_IS_READY & bitseq_results.statusBits) {
+      return; // Should not happen
+    }
+
+    if (bitseq_period > bitseq_settings.minIdlePeriod){
+      if ( bitseq_results.sampledBits >= bitseq_settings.numberOfBits) {
+        // we're done
+        bitseq_disableInterrupt();
+        bitseq_results.statusBits |= BITSEQ_RESULT_IS_READY;
+        os_timer_arm(&bitseq_callbackTimer, 1, 0);
+      } else {
+        // start over
+        bitseq_results.currentBit = 0;
+        bitseq_results.noOfRestarts += 1;
+        bitseq_storeBit
+        bitseq_results.sampledBits += 1;
+      }
     } else {
-      // start over
-      bitseq_results.currentBit = 0;
-      bitseq_results.noOfRestarts += 1;
       bitseq_storeBit
       bitseq_results.sampledBits += 1;
     }
-  } else {
-    bitseq_storeBit
-    bitseq_results.sampledBits += 1;
+    bitseq_results.lastTimestamp = bitseq_now;
   }
-  bitseq_results.lastTimestamp = bitseq_now;
 }
 
 volatile BitseqResult volatile* ICACHE_FLASH_ATTR
