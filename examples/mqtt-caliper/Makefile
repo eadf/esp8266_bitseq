@@ -99,7 +99,7 @@ BITSEQ_BASE ?= ../..
 MQTT_BASE ?= ../esp_mqtt_subtree
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES         = $(BITSEQ_BASE)/localinclude $(BITSEQ_BASE)/driver/bitseq  $(MQTT_BASE)/mqtt $(MQTT_BASE)/modules $(BITSEQ_BASE)/driver/stdout user
+MODULES         = $(BITSEQ_BASE)/examples/localinclude $(BITSEQ_BASE)/driver/bitseq  $(MQTT_BASE)/mqtt $(MQTT_BASE)/modules $(BITSEQ_BASE)/driver/stdout user
 EXTRA_INCDIR    = include $(BITSEQ_BASE)/examples $(SDK_BASE)/../include
 
 # libraries used in this project, mainly provided by the SDK
