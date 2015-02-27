@@ -38,8 +38,6 @@ static void bitseq_clk_intr_handler(int8_t key);
 void bitseq_printBinary(uint32_t data, int untilBit);
 void bitseq_printBufferBinary(int16_t msb, int16_t lsb);
 
-#define bitseq_micros (0x7FFFFFFF & system_get_time())
-
 void
 bitseq_disableInterrupt(void) {
   //disable interrupt
@@ -55,7 +53,7 @@ bitseq_enableInterrupt(void) {
     bitseq_clearResults();
     bitseq_results.statusBits |= BITSEQ_ISRUNNING;
     bitseq_results.statusBits &= ~BITSEQ_RESULT_IS_READY;
-    bitseq_results.lastTimestamp = bitseq_micros;
+    bitseq_results.lastTimestamp = system_get_time();
     bitseq_results.noOfRestarts = 0;
     //enable interrupt
     if (bitseq_settings.onRising) {
@@ -234,11 +232,11 @@ bitseq_sliceBits(int16_t msb, int16_t lsb, bool duplicateMsb){
 #define bitseq_storeBit {                    \
   uint16_t aByte = bitseq_results.currentBit >> 3; \
   uint16_t aBit = bitseq_results.currentBit & 0x7; \
-  if (bitseq_sample) {                       \
-    bitseq_results.data[aByte] |= 1<<aBit;         \
-  } else {                                  \
-    bitseq_results.data[aByte] &= ~(1 << aBit);    \
-  }                                         \
+  if (bitseq_sample) {                             \
+    bitseq_results.data[aByte] |= BIT(aBit);       \
+  } else {                                         \
+    bitseq_results.data[aByte] &= ~(BIT(aBit));    \
+  }                                                \
   bitseq_results.currentBit = (bitseq_results.currentBit+1) & BITSEQ_BUFFER_MASK; \
 }
 
@@ -255,7 +253,7 @@ bitseq_clk_intr_handler(int8_t key) {
     // This interrupt was intended for us - clear interrupt status
     GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status & clock_pin_bit);
 
-    bitseq_now = bitseq_micros;
+    bitseq_now = system_get_time();
     bitseq_sample = GPIO_INPUT_GET(bitseq_data_pin);
     bitseq_period = bitseq_now-bitseq_results.lastTimestamp;
 
