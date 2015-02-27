@@ -14,9 +14,7 @@
 #define user_procTaskPrio        0
 #define user_procTaskQueueLen    1
 os_event_t user_procTaskQueue[user_procTaskQueueLen];
-static void user_procTask(os_event_t *events);
 static void setup(void);
-
 static volatile os_timer_t sensor_timer;
 
 #define CHR_BUFFER_SIZE 128
@@ -92,26 +90,20 @@ setup(void) {
 
   //Setup timer
 #ifdef USE_DIAL_SENSOR
-  dial_init(false, (os_timer_func_t*) dialSensorDataCb);
+  dial_init(false, (os_timer_func_t*) dialSensorDataCb, BITSEQ_CLOCK_PIN, BITSEQ_DATA_PIN);
   os_timer_setfn(&sensor_timer, (os_timer_func_t *) initiateDialSensorSamplingTimer, NULL);
 #endif
 #ifdef USE_CALIPER_SENSOR
-  caliper_init(false, (os_timer_func_t*) caliperSensorDataCb);
+  caliper_init(false, (os_timer_func_t*) caliperSensorDataCb, BITSEQ_CLOCK_PIN, BITSEQ_DATA_PIN);
   os_timer_setfn(&sensor_timer, (os_timer_func_t *) initiateCaliperSensorSamplingTimer, NULL);
 #endif
 #ifdef USE_WATT_SENSOR
-  watt_init(false, (os_timer_func_t*) wattSensorDataCb);
+  watt_init(false, (os_timer_func_t*) wattSensorDataCb, BITSEQ_CLOCK_PIN, BITSEQ_DATA_PIN);
   os_timer_setfn(&sensor_timer, (os_timer_func_t *) initiateWattSensorSamplingTimer, NULL);
 #endif
 
   //Arm the timer
   os_timer_arm(&sensor_timer, SENSOR_SAMPLE_PERIOD, true);
-}
-
-//Do nothing function
-static void ICACHE_FLASH_ATTR
-user_procTask(os_event_t *events) {
-  os_delay_us(10);
 }
 
 //Init function
@@ -132,7 +124,4 @@ user_init() {
   os_timer_disarm(&sensor_timer);
   os_timer_setfn(&sensor_timer, (os_timer_func_t *) setup, NULL);
   os_timer_arm(&sensor_timer, SENSOR_SAMPLE_PERIOD, false);
-
-  //Start os task
-  system_os_task(user_procTask, user_procTaskPrio, user_procTaskQueue, user_procTaskQueueLen);
 }

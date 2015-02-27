@@ -7,5 +7,7 @@
 //#define USE_DIAL_SENSOR
 //#define USE_CALIPER_SENSOR
 #define USE_WATT_SENSOR
+#define BITSEQ_CLOCK_PIN 0
+#define BITSEQ_DATA_PIN 2
 
 #endif

@@ -80,15 +80,19 @@ dial_readAsString(char *buf, int bufLen, int *bytesWritten) {
 }
 
 /**
- * Setup the hardware and initiate callbacks
+ * initiates the dial sampler
+ * negativeLogic: set this to true if the signal is inverted
+ * resultCb: pointer to the callback function
+ * clockPin: the GPIO pin for the clock signal (can be any GPIO supported by easygpio)
+ * dataPin: the GPIO pin for the data signal (can be any GPIO supported by easygpio)
  */
 void ICACHE_FLASH_ATTR
-dial_init(bool negativeLogic, os_timer_func_t *resultCb) {
+dial_init(bool negativeLogic, os_timer_func_t *resultCb, uint8_t clockPin, uint8_t dataPin) {
   dial_negativeLogic = negativeLogic;
   // Acquire 48 bits
   // at least 90 ms between blocks
   // falling edge on non-inverting logic
-  bitseq_init(48, 90000, dial_negativeLogic, resultCb);
+  bitseq_init(48, 90000, dial_negativeLogic, resultCb, clockPin, dataPin);
   userCallback = resultCb;
 }
 

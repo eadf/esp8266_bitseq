@@ -37,7 +37,18 @@ typedef struct {
   volatile uint8_t  volatile * volatile data;
 } BitseqResult;
 
-void bitseq_init(uint16_t numberOfBits, uint32_t minIdlePeriod, bool onRising, os_timer_func_t *resultCb);
+
+/**
+ * initiates the bitseq sampler
+ * numberOfBits: the number of clockpulses we are interested in
+ * minIdlePeriod: the minimum idle period between data packages
+ * negativeLogic: set this to true if the signal is inverted
+ * onRising: trur => do the data sampling on rising clock edge
+ * resultCb: pointer to the callback function
+ * clockPin: the GPIO pin for the clock signal (can be any GPIO supported by easygpio)
+ * dataPin: the GPIO pin for the data signal (can be any GPIO supported by easygpio)
+ */
+void bitseq_init(uint16_t numberOfBits, uint32_t minIdlePeriod, bool onRising, os_timer_func_t *resultCb, uint8_t clockPin, uint8_t dataPin);
 bool bitseq_hasResults(void);
 bool bitseq_isIdle(void);
 bool bitseq_isRunning(void);

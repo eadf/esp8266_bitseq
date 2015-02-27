@@ -13,8 +13,15 @@
 
 bool dial_read(float *sample);
 bool dial_readAsString(char *sample, int bufLen, int *bytesWritten);
-//bool dial_isIdle(void);
 bool dial_startSampling(void);
-void dial_init(bool negativeLogic, os_timer_func_t *resultCb);
+
+/**
+ * initiates the dial sampler
+ * negativeLogic: set this to true if the signal is inverted
+ * resultCb: pointer to the callback function
+ * clockPin: the GPIO pin for the clock signal (can be any GPIO supported by easygpio)
+ * dataPin: the GPIO pin for the data signal (can be any GPIO supported by easygpio)
+ */
+void dial_init(bool negativeLogic, os_timer_func_t *resultCb, uint8_t clockPin, uint8_t dataPin);
 
 #endif /* USER_dial_H_ */

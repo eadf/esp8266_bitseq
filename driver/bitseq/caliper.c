@@ -104,14 +104,18 @@ caliper_readAsString(char *buf, int bufLen, int *bytesWritten){
 }
 
 /**
- * Will set the input pin to inputs.
+ * initiates the caliper sampler
+ * negativeLogic: set this to true if the signal is inverted
+ * resultCb: pointer to the callback function
+ * clockPin: the GPIO pin for the clock signal (can be any GPIO supported by easygpio)
+ * dataPin: the GPIO pin for the data signal (can be any GPIO supported by easygpio)
  */
 void ICACHE_FLASH_ATTR
-caliper_init(bool negativeLogic, os_timer_func_t *resultCb) {
+caliper_init(bool negativeLogic, os_timer_func_t *resultCb, uint8_t clockPin, uint8_t dataPin) {
   caliper_negativeLogic = negativeLogic;
   // Acquire 24 bits
   // at least 10 ms between blocks
   // when a non-inverting amplifier is used we should trigger on rising edge
-  bitseq_init(24, 10000, !caliper_negativeLogic, resultCb);
+  bitseq_init(24, 10000, !caliper_negativeLogic, resultCb, clockPin, dataPin);
   userCallback = resultCb;
 }

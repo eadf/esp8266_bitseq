@@ -14,6 +14,14 @@
 bool watt_read(float *sample);
 bool watt_readAsString(char *sample, int bufLen, int *bytesWritten);
 bool watt_startSampling(void);
-void watt_init(bool negativeLogic, os_timer_func_t *resultCb);
+
+/**
+ * initiates the watt / power meter sampler
+ * negativeLogic: set this to true if the signal is inverted
+ * resultCb: pointer to the callback function
+ * clockPin: the GPIO pin for the clock signal (can be any GPIO supported by easygpio)
+ * dataPin: the GPIO pin for the data signal (can be any GPIO supported by easygpio)
+ */
+void watt_init(bool negativeLogic, os_timer_func_t *resultCb, uint8_t clockPin, uint8_t dataPin);
 
 #endif /* USER_watt_H_ */

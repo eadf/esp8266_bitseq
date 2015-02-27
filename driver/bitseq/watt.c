@@ -78,17 +78,22 @@ watt_readAsString(char *buf, int bufLen, int *bytesWritten) {
 }
 
 /**
- * Setup the hardware and initiate callbacks
+ * initiates the watt / power meter sampler
+ * negativeLogic: set this to true if the signal is inverted
+ * resultCb: pointer to the callback function
+ * clockPin: the GPIO pin for the clock signal (can be any GPIO supported by easygpio)
+ * dataPin: the GPIO pin for the data signal (can be any GPIO supported by easygpio)
  */
 void ICACHE_FLASH_ATTR
-watt_init(bool negativeLogic, os_timer_func_t *resultCb) {
+watt_init(bool negativeLogic, os_timer_func_t *resultCb, uint8_t clockPin, uint8_t dataPin) {
+
   watt_negativeLogic = negativeLogic;
 
   // Acquire 64 bits ( we only need 24 bits of the 4480 bits the device transmit every 900ms)
   // at least 40 ms between blocks
   // rising edge (on non-inverting logic)
 
-  bitseq_init(64, 40000, !watt_negativeLogic, resultCb);
+  bitseq_init(64, 40000, !watt_negativeLogic, resultCb, clockPin, dataPin);
   watt_userCallback = resultCb;
 }
 

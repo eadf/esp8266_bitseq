@@ -1,7 +1,7 @@
 /*
  * gpio_intr.c
  *
- *  Generic bit sampler. Retreives the value of BITSEQ_DATA_PIN every falling or rising edge of BITSEQ_CLK_PIN.
+ *  Generic bit sampler. Retreives the value of bitseq_data_pin every falling or rising edge of bitset_clk_pin.
  *
  *
  *  Created on: Jan 7, 2015
@@ -9,14 +9,15 @@
  */
 
 #include "bitseq/bitseq.h"
+#include "easygpio/easygpio.h"
 #include "osapi.h"
 #include "ets_sys.h"
 #include "gpio.h"
 #include "mem.h"
 
-#define BITSEQ_CLK_PIN 0   // only pin 0 is implemented
-#define BITSEQ_DATA_PIN 2  // pin 2 or 3 is implemented
-static uint32 clock_pin_bit = BIT(BITSEQ_CLK_PIN);
+static uint8_t bitset_clk_pin = 0;
+static uint8_t bitseq_data_pin = 2;
+static uint32_t clock_pin_bit = BIT(0);
 
 // BITSEQ_BUFFER_MASK must equal the bits needed to address BITSEQ_BUFFER_SIZE
 #define BITSEQ_BUFFER_SIZE 512  //4096 bits
@@ -42,7 +43,7 @@ void bitseq_printBufferBinary(int16_t msb, int16_t lsb);
 void
 bitseq_disableInterrupt(void) {
   //disable interrupt
-  gpio_pin_intr_state_set(GPIO_ID_PIN(BITSEQ_CLK_PIN), GPIO_PIN_INTR_DISABLE);
+  gpio_pin_intr_state_set(GPIO_ID_PIN(bitset_clk_pin), GPIO_PIN_INTR_DISABLE);
   bitseq_results.statusBits &= ~BITSEQ_ISRUNNING;
 }
 
@@ -58,9 +59,9 @@ bitseq_enableInterrupt(void) {
     bitseq_results.noOfRestarts = 0;
     //enable interrupt
     if (bitseq_settings.onRising) {
-      gpio_pin_intr_state_set(GPIO_ID_PIN(BITSEQ_CLK_PIN), GPIO_PIN_INTR_POSEDGE);
+      gpio_pin_intr_state_set(GPIO_ID_PIN(bitset_clk_pin), GPIO_PIN_INTR_POSEDGE);
     } else {
-      gpio_pin_intr_state_set(GPIO_ID_PIN(BITSEQ_CLK_PIN), GPIO_PIN_INTR_NEGEDGE);
+      gpio_pin_intr_state_set(GPIO_ID_PIN(bitset_clk_pin), GPIO_PIN_INTR_NEGEDGE);
     }
   }
 }
@@ -255,7 +256,7 @@ bitseq_clk_intr_handler(int8_t key) {
     GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, gpio_status & clock_pin_bit);
 
     bitseq_now = bitseq_micros;
-    bitseq_sample = GPIO_INPUT_GET(BITSEQ_DATA_PIN);
+    bitseq_sample = GPIO_INPUT_GET(bitseq_data_pin);
     bitseq_period = bitseq_now-bitseq_results.lastTimestamp;
 
     if (BITSEQ_RESULT_IS_READY & bitseq_results.statusBits) {
@@ -327,13 +328,21 @@ bitseq_debugTrace(int16_t msb, int16_t lsb) {
 }
 
 /**
- * numberOfBits: the number of bits we are going to sample
- * minIdlePeriod: at least this many us between blocks
- * onRising : rising or falling edge trigger
- * resultCb : the callback to call when results are available
+ * initiates the bitseq sampler
+ * numberOfBits: the number of clockpulses we are interested in
+ * minIdlePeriod: the minimum idle period between data packages
+ * negativeLogic: set this to true if the signal is inverted
+ * onRising: trur => do the data sampling on rising clock edge
+ * resultCb: pointer to the callback function
+ * clockPin: the GPIO pin for the clock signal (can be any GPIO supported by easygpio)
+ * dataPin: the GPIO pin for the data signal (can be any GPIO supported by easygpio)
  */
 void ICACHE_FLASH_ATTR
-bitseq_init(uint16_t numberOfBits, uint32_t minIdlePeriod, bool onRising, os_timer_func_t *resultCb) {
+bitseq_init(uint16_t numberOfBits, uint32_t minIdlePeriod, bool onRising,
+            os_timer_func_t *resultCb, uint8_t clockPin, uint8_t dataPin) {
+  bitset_clk_pin = clockPin;
+  bitseq_data_pin = dataPin;
+  clock_pin_bit = BIT(bitset_clk_pin);
 
   //Setup callback timer
   os_timer_disarm(&bitseq_callbackTimer);
@@ -348,50 +357,16 @@ bitseq_init(uint16_t numberOfBits, uint32_t minIdlePeriod, bool onRising, os_tim
 
   bitseq_clearResults();
 
-  if (0 == BITSEQ_CLK_PIN){
-    //set gpio0 as gpio pin
-    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);
-    //disable pull downs
-    PIN_PULLDWN_DIS(PERIPHS_IO_MUX_GPIO0_U);
-    //disable pull ups
-    PIN_PULLUP_DIS(PERIPHS_IO_MUX_GPIO0_U);
-    // disable output
-    GPIO_DIS_OUTPUT(BITSEQ_CLK_PIN);
-    ETS_GPIO_INTR_ATTACH(bitseq_clk_intr_handler,0);
-    ETS_GPIO_INTR_DISABLE();
-    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0);
-    gpio_output_set(0, 0, 0, GPIO_ID_PIN(BITSEQ_CLK_PIN));
-    gpio_register_set(GPIO_PIN_ADDR(0), GPIO_PIN_INT_TYPE_SET(GPIO_PIN_INTR_DISABLE)
-        | GPIO_PIN_PAD_DRIVER_SET(GPIO_PAD_DRIVER_DISABLE)
-        | GPIO_PIN_SOURCE_SET(GPIO_AS_PIN_SOURCE));
-  } else {
-    os_printf("bitseq_init: Error BITSEQ_CLK_PIN==%d is not implemented", BITSEQ_CLK_PIN);
+  if (!easygpio_attachInterrupt(bitset_clk_pin, EASYGPIO_NOPULL, bitseq_clk_intr_handler)){
+    os_printf("bitseq_init: Error setting up clock pin: %d", bitset_clk_pin);
     return;
   }
 
-  if (2 == BITSEQ_DATA_PIN){
-    //set gpio2 as gpio pin
-    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO2_U, FUNC_GPIO2);
-    //disable pull downs
-    PIN_PULLDWN_DIS(PERIPHS_IO_MUX_GPIO2_U);
-    //disable pull ups
-    PIN_PULLUP_DIS(PERIPHS_IO_MUX_GPIO2_U);
-    // disable output
-    GPIO_DIS_OUTPUT(BITSEQ_DATA_PIN);
-  } else if (3 == BITSEQ_DATA_PIN) {
-    //set gpio2 as gpio pin
-    PIN_FUNC_SELECT(PERIPHS_IO_MUX_U0RXD_U, FUNC_GPIO3);
-    //disable pull downs
-    PIN_PULLDWN_DIS(PERIPHS_IO_MUX_U0RXD_U);
-    //disable pull ups
-    PIN_PULLUP_DIS(PERIPHS_IO_MUX_U0RXD_U);
-    // disable output
-    GPIO_DIS_OUTPUT(BITSEQ_DATA_PIN);
-  } else {
-    os_printf("bitseq_init: Error BITSEQ_DATA_PIN==%d is not implemented", BITSEQ_DATA_PIN);
+  if (!easygpio_pinMode(bitseq_data_pin, EASYGPIO_NOPULL, EASYGPIO_INPUT)) {
+    os_printf("bitseq_init: Error setting up data pin: %d", bitseq_data_pin);
     return;
   }
-  os_printf("bitseq_init: Initiated the BITSEQ sampler with BITSEQ_CLK_PIN=%d and BITSEQ_DATA_PIN=%d.\n", BITSEQ_CLK_PIN, BITSEQ_DATA_PIN);
+  os_printf("bitseq_init: Initiated the BITSEQ sampler with bitset_clk_pin=%d and bitseq_data_pin=%d.\n", bitset_clk_pin, bitseq_data_pin);
   os_printf("bitseq_init: Will sample %d bits on the %s edge.\n\n", bitseq_settings.numberOfBits, bitseq_settings.onRising?"rising":"falling");
 
   //clear gpio status
