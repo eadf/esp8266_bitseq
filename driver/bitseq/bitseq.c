@@ -106,7 +106,7 @@ bitseq_float2string(float sample, int divisor, char *buf, int bufLen) {
     case 100000: size = os_sprintf(localBuffer, "%s%d.%05d",sign,h, r);
       break;
     default:
-      os_printf("dro_utils_float_2_string: could not recognize divisor: %d\r\n", divisor);
+      os_printf("dro_utils_float_2_string: could not recognize divisor: %d\n", divisor);
      return 0;
   }
   int l = size>bufLen?bufLen:size;
@@ -322,7 +322,7 @@ bitseq_debugTrace(int16_t msb, int16_t lsb) {
     bitseq_results.currentBit   // cb = current bit
     );
   bitseq_printBinary16(bitseq_results.statusBits);
-  os_printf("\n\r");
+  os_printf("\n");
 }
 
 /**
@@ -364,8 +364,9 @@ bitseq_init(uint16_t numberOfBits, uint32_t minIdlePeriod, bool onRising,
     os_printf("bitseq_init: Error setting up data pin: %d", bitseq_data_pin);
     return;
   }
-  os_printf("bitseq_init: Initiated the BITSEQ sampler with bitset_clk_pin=%d and bitseq_data_pin=%d.\n", bitset_clk_pin, bitseq_data_pin);
-  os_printf("bitseq_init: Will sample %d bits on the %s edge.\n\n", bitseq_settings.numberOfBits, bitseq_settings.onRising?"rising":"falling");
+  os_printf("bitseq_init: Initiated the BITSEQ sampler \n");
+  os_printf(" bitset_clk_pin=%d and bitseq_data_pin=%d.\n", bitset_clk_pin, bitseq_data_pin);
+  os_printf(" bitseq_init: Will sample %d bits on the %s edge.\n\n", bitseq_settings.numberOfBits, bitseq_settings.onRising?"rising":"falling");
 
   //clear gpio status
   GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(0));
