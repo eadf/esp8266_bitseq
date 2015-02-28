@@ -41,6 +41,7 @@ Device| ESP8266
 Clock | GPIO0
 Data | GPIO2
 
+You can easily change the pin numbers as you see fit.
 
 # License 
 
