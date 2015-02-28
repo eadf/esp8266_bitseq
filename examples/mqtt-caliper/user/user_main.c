@@ -137,8 +137,6 @@ mqttDataCb(uint32_t *args, const char* topic, uint32_t topic_len, const char *da
   os_free(dataBuf);
 }
 
-
-
 void ICACHE_FLASH_ATTR
 user_init(void) {
   // Make os_printf working again. Baud:115200,n,8,1
@@ -147,7 +145,7 @@ user_init(void) {
 
   CFG_Load();
   gpio_init();
-  caliper_init(false, (os_timer_func_t*) caliperSensorDataCb);
+  caliper_init(BITSEQ_NEGATIVE_LOGIC, (os_timer_func_t*) caliperSensorDataCb, BITSEQ_CLOCK_PIN, BITSEQ_DATA_PIN);
 
   MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, sysCfg.security);
   MQTT_InitClient(&mqttClient, sysCfg.device_id, sysCfg.mqtt_user, sysCfg.mqtt_pass, sysCfg.mqtt_keepalive, 1);

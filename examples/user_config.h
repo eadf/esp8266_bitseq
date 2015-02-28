@@ -30,5 +30,13 @@
 
 /* application configurations */
 #define SENSOR_SAMPLE_PERIOD 1000 // 1 sec between each sample.
+// The GPIO pin your are using as clock
+#define BITSEQ_CLOCK_PIN 0
+// The GPIO pin your are using as data
+#define BITSEQ_DATA_PIN 2
+// set this to true if your input is inverted
+#define BITSEQ_NEGATIVE_LOGIC false
+// if this is defined a debug trace of the raw input bits will be printed
+//#define BITSEQ_DEBUG_RAW
 
 #endif

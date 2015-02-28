@@ -147,7 +147,7 @@ user_init(void) {
 
   CFG_Load();
   gpio_init();
-  watt_init(false, (os_timer_func_t*) wattSensorDataCb);
+  watt_init(BITSEQ_NEGATIVE_LOGIC, (os_timer_func_t*) wattSensorDataCb, BITSEQ_CLOCK_PIN, BITSEQ_DATA_PIN);
 
   MQTT_InitConnection(&mqttClient, sysCfg.mqtt_host, sysCfg.mqtt_port, sysCfg.security);
   MQTT_InitClient(&mqttClient, sysCfg.device_id, sysCfg.mqtt_user, sysCfg.mqtt_pass, sysCfg.mqtt_keepalive, 1);
