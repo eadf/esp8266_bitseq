@@ -90,15 +90,15 @@ setup(void) {
 
   //Setup timer
 #ifdef USE_DIAL_SENSOR
-  dial_init(false, (os_timer_func_t*) dialSensorDataCb, BITSEQ_CLOCK_PIN, BITSEQ_DATA_PIN);
+  dial_init(BITSEQ_NEGATIVE_LOGIC, (os_timer_func_t*) dialSensorDataCb, BITSEQ_CLOCK_PIN, BITSEQ_DATA_PIN);
   os_timer_setfn(&sensor_timer, (os_timer_func_t *) initiateDialSensorSamplingTimer, NULL);
 #endif
 #ifdef USE_CALIPER_SENSOR
-  caliper_init(false, (os_timer_func_t*) caliperSensorDataCb, BITSEQ_CLOCK_PIN, BITSEQ_DATA_PIN);
+  caliper_init(BITSEQ_NEGATIVE_LOGIC, (os_timer_func_t*) caliperSensorDataCb, BITSEQ_CLOCK_PIN, BITSEQ_DATA_PIN);
   os_timer_setfn(&sensor_timer, (os_timer_func_t *) initiateCaliperSensorSamplingTimer, NULL);
 #endif
 #ifdef USE_WATT_SENSOR
-  watt_init(false, (os_timer_func_t*) wattSensorDataCb, BITSEQ_CLOCK_PIN, BITSEQ_DATA_PIN);
+  watt_init(BITSEQ_NEGATIVE_LOGIC, (os_timer_func_t*) wattSensorDataCb, BITSEQ_CLOCK_PIN, BITSEQ_DATA_PIN);
   os_timer_setfn(&sensor_timer, (os_timer_func_t *) initiateWattSensorSamplingTimer, NULL);
 #endif
 

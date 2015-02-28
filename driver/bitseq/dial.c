@@ -26,24 +26,25 @@ dial_read(float *sample)
     uint32_t result;
     int32_t polishedResult;
 
-    result = bitseq_sliceBits(-2,-25,true);
+    result = bitseq_sliceBits(-1,-25,true);
     if (dial_negativeLogic) {
       result = ~result;
     }
-    polishedResult = result;
     if (result & 1<<23) {
       // bit 23 indicates negative value, just set bit 24-31 as well
       polishedResult = (int32_t)(CONVERT_TO_MM*((int32_t)(result|0xff000000)));
     } else {
       polishedResult = (int32_t)(CONVERT_TO_MM*result);
     }
-    //os_printf("BITSEQ got result: ");
-    //bitseq_debugTrace(-2,-25);
+#ifdef BITSEQ_DEBUG_RAW
+    os_printf("BITSEQ got result: ");
+    bitseq_debugTrace(-1,-25);
+#endif
     *sample = 0.0001f*polishedResult;
     return true;
   } else {
     os_printf("BITSEQ Still running, tmp result is: ");
-    bitseq_debugTrace(-2,-25);
+    bitseq_debugTrace(-1,-25);
   }
   return false;
 }
