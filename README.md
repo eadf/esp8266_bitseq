@@ -41,7 +41,7 @@ Device| ESP8266
 Clock | GPIO0
 Data | GPIO2
 
-You can easily change the pin numbers as you see fit.
+GPIO0 and GPIO2 is selected because of the ESP-1, but if you have more GPIO pins you can easily change the pin configuration to whatever you need (it's just a #define in user_config.h).
 
 # License 
 
